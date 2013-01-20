@@ -17,6 +17,8 @@
 
 #include <libspotify/api.h>
 
+#include "audio.h"
+
 enum spthui_state {
 	STATE_RUNNING,
 	STATE_DYING,
@@ -42,6 +44,8 @@ struct spthui {
 	pthread_cond_t cond;
 
 	pthread_t spotify_worker;
+
+	struct audio *audio;
 
 };
 
@@ -539,6 +543,10 @@ int main(int argc, char **argv)
 	pthread_mutex_init(&spthui.lock, NULL);
 	pthread_cond_init(&spthui.cond, NULL);
 
+	if ((err = audio_init(&spthui.audio)) != 0) {
+		return err;
+	}
+
 	home = getenv("HOME");
 
 	snprintf(cache_location, sizeof(cache_location),
@@ -614,6 +622,8 @@ int main(int argc, char **argv)
 	fprintf(stderr, "gtk_main() returned\n");
 
 	err = join_worker(&spthui);
+
+	audio_free(spthui.audio);
 
 	free((void *)config.application_key);
 
