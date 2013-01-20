@@ -45,9 +45,15 @@ struct spthui {
 
 };
 
+enum item_type {
+	ITEM_NONE,
+	ITEM_PLAYLIST,
+};
+
 /* wants more columns, obviously */
 static GType list_columns[] = {
-	G_TYPE_POINTER,
+	G_TYPE_POINTER, /* item itself */
+	G_TYPE_INT,     /* enum item_type */
 	G_TYPE_STRING,
 };
 
@@ -66,7 +72,7 @@ static GtkTreeView *spthui_list_new(void)
 
 	column = gtk_tree_view_column_new_with_attributes("Item",
 							  gtk_cell_renderer_text_new(),
-							  "text", 1,
+							  "text", 2,
 							  NULL);
 	gtk_tree_view_append_column(view, column);
 	return view;
@@ -162,7 +168,8 @@ static void add_pl_or_name(GtkTreeView *list, sp_playlist *pl)
 	gtk_list_store_append(store, &iter);
 	gtk_list_store_set(store, &iter,
 			   0, pl,
-			   1, sp_playlist_name(pl),
+			   1, ITEM_PLAYLIST,
+			   2, sp_playlist_name(pl),
 			   -1);
 }
 
@@ -345,7 +352,7 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 	gtk_tree_selection_get_selected(selection, &model, &iter);
 	gtk_tree_model_get(model, &iter,
 			   0, &pl,
-			   1, &name,
+			   2, &name,
 			   -1);
 
 	tab_add(spthui->tabs, name);
