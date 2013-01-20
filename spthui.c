@@ -357,6 +357,11 @@ static void playlist_expand_into(GtkListStore *store, sp_playlist *pl)
 	}
 }
 
+static void track_play(struct spthui *spthui, sp_track *track)
+{
+	fprintf(stderr, "%s(): %s\n", __func__, sp_track_name(track));
+}
+
 static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 				GtkTreeViewColumn *column,
 				void *userdata)
@@ -365,19 +370,34 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 	GtkTreeIter iter;
 	GtkTreeSelection *selection;
 	GtkTreeModel *model;
-	sp_playlist *pl;
 	char *name;
+	void *item;
+	enum item_type item_type;
+
 
 
 	selection = gtk_tree_view_get_selection(view);
 	gtk_tree_selection_get_selected(selection, &model, &iter);
 	gtk_tree_model_get(model, &iter,
-			   0, &pl,
+			   0, &item,
+			   1, &item_type,
 			   2, &name,
 			   -1);
 
-	view = tab_add(spthui->tabs, name);
-	playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)), pl);
+	switch (item_type) {
+	case ITEM_PLAYLIST:
+		view = tab_add(spthui->tabs, name);
+		g_signal_connect(view, "row-activated",
+				 G_CALLBACK(list_item_activated), spthui);
+		playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)), item);
+		break;
+	case ITEM_TRACK:
+		track_play(spthui, item);
+		break;
+	default:
+		fprintf(stderr, "%s(): unknown item in list, type %d\n", __func__, item_type);
+		break;
+	}
 }
 
 static int read_app_key(const void **bufp, size_t *sizep)
