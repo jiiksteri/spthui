@@ -48,6 +48,7 @@ struct spthui {
 enum item_type {
 	ITEM_NONE,
 	ITEM_PLAYLIST,
+	ITEM_TRACK,
 };
 
 /* wants more columns, obviously */
@@ -336,6 +337,26 @@ static void login_clicked(GtkButton *btn, void *data)
 	}
 }
 
+static void add_track(GtkListStore *store, sp_track *track)
+{
+	GtkTreeIter iter;
+
+	gtk_list_store_append(store, &iter);
+	gtk_list_store_set(store, &iter,
+			   0, track,
+			   1, ITEM_TRACK,
+			   2, sp_track_name(track),
+			   -1);
+}
+
+static void playlist_expand_into(GtkListStore *store, sp_playlist *pl)
+{
+	int i;
+	for (i = 0; i < sp_playlist_num_tracks(pl); i++) {
+		add_track(store, sp_playlist_track(pl, i));
+	}
+}
+
 static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 				GtkTreeViewColumn *column,
 				void *userdata)
@@ -355,7 +376,8 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 			   2, &name,
 			   -1);
 
-	tab_add(spthui->tabs, name);
+	view = tab_add(spthui->tabs, name);
+	playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)), pl);
 }
 
 static int read_app_key(const void **bufp, size_t *sizep)
