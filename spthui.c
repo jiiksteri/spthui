@@ -158,6 +158,11 @@ static void *spotify_worker(void *arg)
 		pthread_mutex_unlock(&spthui->lock);
 	}
 
+	err = sp_session_player_play(spthui->sp_session, 0);
+	if (err != 0) {
+		fprintf(stderr, "%s(): failed to stop playback: %s\n",
+			__func__, sp_error_message(err));
+	}
 	err = spin_logout(spthui->sp_session);
 	sp_session_release(spthui->sp_session);
 	fprintf(stderr, "%s(): exiting (%d)\n", __func__, err);
@@ -275,11 +280,34 @@ static void log_message(sp_session *session, const char *message)
 	fprintf(stderr, "%s(): %s", __func__, message);
 }
 
+static int music_delivery(sp_session *session,
+			  const sp_audioformat *format,
+			  const void *frames,
+			  int num_frames)
+{
+	/* struct spthui *spthui = sp_session_userdata(session); */
+
+	static int delivery_reported = 0;
+
+	if (delivery_reported == 0) {
+		delivery_reported = 1;
+		fprintf(stderr,
+			"%s(): Not really implemented, _but_"
+			" %d frames, %d channels at %dHz\n",
+			__func__, num_frames,
+			format->channels, format->sample_rate);
+	}
+
+	return num_frames;
+
+}
+
 static sp_session_callbacks cb = {
 	.logged_in = logged_in,
 	.logged_out = logged_out,
 	.notify_main_thread = notify_main_thread,
 	.log_message = log_message,
+	.music_delivery = music_delivery,
 };
 
 static char cache_location[512];
@@ -363,7 +391,20 @@ static void playlist_expand_into(GtkListStore *store, sp_playlist *pl)
 
 static void track_play(struct spthui *spthui, sp_track *track)
 {
-	fprintf(stderr, "%s(): %s\n", __func__, sp_track_name(track));
+	sp_error err;
+
+	err = sp_session_player_load(spthui->sp_session, track);
+	if (err != SP_ERROR_OK) {
+		fprintf(stderr, "%s(): %s failed to load: %s\n",
+			__func__, sp_track_name(track), sp_error_message(err));
+		return;
+	}
+
+	err = sp_session_player_play(spthui->sp_session, TRUE);
+	if (err != SP_ERROR_OK) {
+		fprintf(stderr, "%s(): %s failed to start playback: %s\n",
+			__func__, sp_track_name(track), sp_error_message(err));
+	}
 }
 
 static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
