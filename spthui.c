@@ -285,7 +285,7 @@ static int music_delivery(sp_session *session,
 			  const void *frames,
 			  int num_frames)
 {
-	/* struct spthui *spthui = sp_session_userdata(session); */
+	struct spthui *spthui = sp_session_userdata(session);
 
 	static int delivery_reported = 0;
 
@@ -298,7 +298,29 @@ static int music_delivery(sp_session *session,
 			format->channels, format->sample_rate);
 	}
 
-	return num_frames;
+	return audio_delivery(spthui->audio,
+			      format->channels, format->sample_rate,
+			      frames, num_frames);
+
+}
+
+static void start_playback(sp_session *session)
+{
+	struct spthui *spthui = sp_session_userdata(session);
+	audio_start_playback(spthui->audio);
+}
+
+static void stop_playback(sp_session *session)
+{
+	struct spthui *spthui = sp_session_userdata(session);
+	audio_stop_playback(spthui->audio);
+}
+
+static void get_audio_buffer_stats(sp_session *session, sp_audio_buffer_stats *stats)
+{
+	struct spthui *spthui = sp_session_userdata(session);
+
+	audio_buffer_stats(spthui->audio, &stats->samples, &stats->stutter);
 
 }
 
@@ -308,6 +330,9 @@ static sp_session_callbacks cb = {
 	.notify_main_thread = notify_main_thread,
 	.log_message = log_message,
 	.music_delivery = music_delivery,
+	.start_playback = start_playback,
+	.stop_playback = stop_playback,
+	.get_audio_buffer_stats = get_audio_buffer_stats,
 };
 
 static char cache_location[512];
