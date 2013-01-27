@@ -39,6 +39,7 @@ struct spthui {
 	GtkEntry *search;
 
 	GtkNotebook *tabs;
+	GtkLabel *track_info;
 
 	pthread_mutex_t lock;
 	pthread_cond_t cond;
@@ -589,6 +590,74 @@ static gboolean spthui_exit(GtkWidget *widget, GdkEvent *event, void *user_data)
 	return FALSE;
 }
 
+static void unimplemented_click(const char *cb, struct spthui *spthui, GtkButton *button)
+{
+	fprintf(stderr, "%s(): UNIMPLEMENTED spthui:%p button:%p\n",
+		cb, spthui, button);
+
+}
+
+static void prev_clicked(GtkButton *button, void *user_data)
+{
+	struct spthui *spthui = user_data;
+
+	unimplemented_click(__func__, spthui, button);
+
+}
+
+static void next_clicked(GtkButton *button, void *user_data)
+{
+	struct spthui *spthui = user_data;
+
+	unimplemented_click(__func__, spthui, button);
+}
+
+static void playback_toggle_clicked(GtkButton *button, void *user_data)
+{
+	struct spthui *spthui = user_data;
+
+	unimplemented_click(__func__, spthui, button);
+}
+
+
+
+static GtkWidget *setup_playback_controls(struct spthui *spthui)
+{
+	GtkWidget *box;
+
+	GtkWidget *prev, *playback_toggle, *next;
+
+	box = gtk_hbox_new(FALSE, 0);
+
+	spthui->track_info = GTK_LABEL(gtk_label_new("Not playing"));
+	gtk_misc_set_alignment(GTK_MISC(spthui->track_info), 0.0, 0.5);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(spthui->track_info),
+			   TRUE, TRUE, 0);
+
+
+
+	/* Bah. GTK_STOCK_MEDIA_* stock item icons are since 2.26.
+	 * Earlier versions just use the mnemonic.
+	 */
+
+	prev = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PREVIOUS);
+	g_signal_connect(prev, "clicked", G_CALLBACK(prev_clicked), spthui);
+
+	next = gtk_button_new_from_stock(GTK_STOCK_MEDIA_NEXT);
+	g_signal_connect(next, "clicked", G_CALLBACK(next_clicked), spthui);
+
+	playback_toggle = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY);
+	g_signal_connect(playback_toggle, "clicked", G_CALLBACK(playback_toggle_clicked), spthui);
+
+
+	gtk_box_pack_start(GTK_BOX(box), prev, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(box), playback_toggle, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(box), next, FALSE, FALSE, 0);
+
+
+	return box;
+}
+
 int main(int argc, char **argv)
 {
 	sp_session_config config;
@@ -668,6 +737,9 @@ int main(int argc, char **argv)
 	spthui.tabs = setup_tabs(&spthui);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(spthui.tabs),
 			   TRUE, TRUE, 0);
+
+	gtk_box_pack_start(GTK_BOX(vbox), setup_playback_controls(&spthui),
+			   FALSE, FALSE, 0);
 
 	spthui.main_window = GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL));
 	g_object_ref_sink(spthui.main_window);
