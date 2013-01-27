@@ -132,7 +132,7 @@ void audio_stop_playback(struct audio *audio)
 	int err;
 
 	report_pcm_state(audio, "audio_stop_playback()");
-	if ((err = snd_pcm_pause(audio->pcm, 1)) < 0) {
+	if ((err = snd_pcm_drain(audio->pcm)) < 0) {
 		fprintf(stderr, "%s(): %d: %s\n",
 			__func__, err, snd_strerror(err));
 	}
