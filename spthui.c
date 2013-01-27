@@ -292,8 +292,7 @@ static int music_delivery(sp_session *session,
 	if (delivery_reported == 0) {
 		delivery_reported = 1;
 		fprintf(stderr,
-			"%s(): Not really implemented, _but_"
-			" %d frames, %d channels at %dHz\n",
+			"%s(): %d frames, %d channels at %dHz\n",
 			__func__, num_frames,
 			format->channels, format->sample_rate);
 	}
