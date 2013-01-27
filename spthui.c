@@ -324,6 +324,18 @@ static void get_audio_buffer_stats(sp_session *session, sp_audio_buffer_stats *s
 
 }
 
+static void end_of_track(sp_session *session)
+{
+	struct spthui *spthui = sp_session_userdata(session);
+
+	fprintf(stderr,
+		"%s(): stopping playback. FIXME: go to next track\n",
+		__func__);
+
+	audio_stop_playback(spthui->audio);
+	sp_session_player_unload(session);
+}
+
 static sp_session_callbacks cb = {
 	.logged_in = logged_in,
 	.logged_out = logged_out,
@@ -333,6 +345,7 @@ static sp_session_callbacks cb = {
 	.start_playback = start_playback,
 	.stop_playback = stop_playback,
 	.get_audio_buffer_stats = get_audio_buffer_stats,
+	.end_of_track = end_of_track,
 };
 
 static char cache_location[512];
