@@ -41,6 +41,14 @@ struct spthui {
 	GtkNotebook *tabs;
 	GtkLabel *track_info;
 
+	/* What is playing right now */
+	GtkTreeView *current_view;
+	sp_track *current_track;
+
+	/* What the user is looking at */
+	GtkTreeView *selected_view;
+	sp_track *selected_track;
+
 	pthread_mutex_t lock;
 	pthread_cond_t cond;
 
@@ -445,6 +453,44 @@ static void track_play(struct spthui *spthui, sp_track *track)
 	}
 }
 
+static void track_selection_changed(GtkTreeSelection *selection, void *userdata)
+{
+	struct spthui *spthui = userdata;
+	GtkTreeIter iter;
+	GtkTreeModel *model;
+	void *selected;
+	enum item_type item_type;
+
+	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
+
+		gtk_tree_model_get(model, &iter,
+				   0, &selected,
+				   1, &item_type,
+				   -1);
+
+		if (item_type != ITEM_TRACK) {
+			fprintf(stderr, "%s(): no idea how to handle item_type %d\n",
+				__func__, item_type);
+		} else {
+			spthui->selected_track = selected;
+		}
+	}
+
+	fprintf(stderr, "%s(): selected=%p:%p current=%p:%p\n",
+		__func__,
+		spthui->selected_view, spthui->selected_track,
+		spthui->current_view, spthui->current_track);
+}
+
+static void setup_selection_tracker(GtkTreeView *view, struct spthui *spthui)
+{
+	GtkTreeSelection *selection;
+
+	selection = gtk_tree_view_get_selection(view);
+	g_signal_connect(selection, "changed",
+			 G_CALLBACK(track_selection_changed), spthui);
+}
+
 static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 				GtkTreeViewColumn *column,
 				void *userdata)
@@ -470,11 +516,14 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 	switch (item_type) {
 	case ITEM_PLAYLIST:
 		view = tab_add(spthui->tabs, name);
+		setup_selection_tracker(view, spthui);
 		g_signal_connect(view, "row-activated",
 				 G_CALLBACK(list_item_activated), spthui);
 		playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)), item);
 		break;
 	case ITEM_TRACK:
+		spthui->current_view = view;
+		spthui->current_track = item;
 		track_play(spthui, item);
 		break;
 	default:
@@ -544,6 +593,15 @@ static void close_selected_tab(GtkButton *btn, void *userdata)
 	}
 }
 
+static void switch_page(GtkNotebook *notebook, GtkWidget *page,
+			guint page_num, void *userdata)
+{
+	struct spthui *spthui = userdata;
+
+	fprintf(stderr, "%s(): %d\n", __func__, page_num);
+	spthui->selected_view = tab_get(notebook, page_num);
+}
+
 static GtkNotebook *setup_tabs(struct spthui *spthui)
 {
 	GtkTreeView *view;
@@ -552,6 +610,8 @@ static GtkNotebook *setup_tabs(struct spthui *spthui)
 
 	tabs = GTK_NOTEBOOK(gtk_notebook_new());
 	g_object_ref_sink(tabs);
+	g_signal_connect(tabs, "switch-page",
+			 G_CALLBACK(switch_page), spthui);
 
 	btn = GTK_BUTTON(gtk_button_new());
 	gtk_button_set_image(btn,
