@@ -111,7 +111,7 @@ static GtkTreeView *tab_get(struct spthui *spthui, int ind)
 {
 	GList *children;
 
-	children = gtk_container_get_children(GTK_CONTAINER(gtk_notebook_get_nth_page(spthui->tabs, 0)));
+	children = gtk_container_get_children(GTK_CONTAINER(gtk_notebook_get_nth_page(spthui->tabs, ind)));
 	return GTK_TREE_VIEW(children->data);
 }
 
