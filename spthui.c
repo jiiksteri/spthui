@@ -107,11 +107,11 @@ static GtkTreeView *tab_add(GtkNotebook *tabs, const char *label_text)
 
 }
 
-static GtkTreeView *tab_get(struct spthui *spthui, int ind)
+static GtkTreeView *tab_get(GtkNotebook *tabs, int ind)
 {
 	GList *children;
 
-	children = gtk_container_get_children(GTK_CONTAINER(gtk_notebook_get_nth_page(spthui->tabs, ind)));
+	children = gtk_container_get_children(GTK_CONTAINER(gtk_notebook_get_nth_page(tabs, ind)));
 	return GTK_TREE_VIEW(children->data);
 }
 
@@ -190,7 +190,7 @@ static void pl_fill_name(sp_playlist *pl, void *userdata)
 
 	if (sp_playlist_is_loaded(pl)) {
 		gdk_threads_enter();
-		add_pl_or_name(tab_get(spthui, 0), pl);
+		add_pl_or_name(tab_get(spthui->tabs, 0), pl);
 		gdk_threads_leave();
 	}
 }
@@ -221,7 +221,7 @@ static void do_add_playlists(sp_playlistcontainer *playlists, void *userdata)
 	n = sp_playlistcontainer_num_playlists(playlists);
 	fprintf(stderr, "%s(): %d playlists\n", __func__, n);
 	gdk_threads_enter();
-	gtk_list_store_clear(GTK_LIST_STORE(gtk_tree_view_get_model(tab_get(spthui, 0))));
+	gtk_list_store_clear(GTK_LIST_STORE(gtk_tree_view_get_model(tab_get(spthui->tabs, 0))));
 	for (i = 0; i < n; i++) {
 		pl = sp_playlistcontainer_playlist(playlists, i);
 		add_playlist(spthui, pl);
