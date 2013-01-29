@@ -41,6 +41,9 @@ struct spthui {
 	GtkNotebook *tabs;
 	GtkLabel *track_info;
 
+	GtkButton *playback_toggle;
+	int playing;
+
 	/* What is playing right now */
 	GtkTreeView *current_view;
 	sp_track *current_track;
@@ -312,6 +315,24 @@ static int music_delivery(sp_session *session,
 
 }
 
+static void ui_update_playing(struct spthui *spthui)
+{
+	const char *stock;
+	const char *name;
+
+	stock = spthui->playing
+		? GTK_STOCK_MEDIA_PAUSE
+		: GTK_STOCK_MEDIA_PLAY;
+
+	name = spthui->current_track != NULL
+		? sp_track_name(spthui->current_track)
+		: "<no current track>";
+
+
+	gtk_label_set_text(spthui->track_info, name);
+	gtk_button_set_label(spthui->playback_toggle, stock);
+}
+
 static void start_playback(sp_session *session)
 {
 	struct spthui *spthui = sp_session_userdata(session);
@@ -341,6 +362,7 @@ static void end_of_track(sp_session *session)
 		__func__);
 
 	audio_stop_playback(spthui->audio);
+	ui_update_playing(spthui);
 	sp_session_player_unload(session);
 }
 
@@ -439,17 +461,24 @@ static void track_play(struct spthui *spthui, sp_track *track)
 {
 	sp_error err;
 
-	err = sp_session_player_load(spthui->sp_session, track);
-	if (err != SP_ERROR_OK) {
-		fprintf(stderr, "%s(): %s failed to load: %s\n",
-			__func__, sp_track_name(track), sp_error_message(err));
-		return;
+	if (track != NULL) {
+		err = sp_session_player_load(spthui->sp_session, track);
+		if (err != SP_ERROR_OK) {
+			fprintf(stderr, "%s(): %s failed to load: %s\n",
+				__func__, sp_track_name(track), sp_error_message(err));
+			return;
+		}
 	}
 
-	err = sp_session_player_play(spthui->sp_session, TRUE);
+	err = sp_session_player_play(spthui->sp_session, track != NULL);
 	if (err != SP_ERROR_OK) {
-		fprintf(stderr, "%s(): %s failed to start playback: %s\n",
-			__func__, sp_track_name(track), sp_error_message(err));
+		fprintf(stderr, "%s(): failed to %s playback: %s\n",
+			__func__,
+			track != NULL ? "start" : "stop",
+			sp_error_message(err));
+	} else {
+		spthui->playing = 1;
+		ui_update_playing(spthui);
 	}
 }
 
@@ -689,7 +718,9 @@ static void playback_toggle_clicked(GtkButton *button, void *user_data)
 {
 	struct spthui *spthui = user_data;
 
-	unimplemented_click(__func__, spthui, button);
+	sp_session_player_play(spthui->sp_session, !spthui->playing);
+	spthui->playing = !spthui->playing;
+	ui_update_playing(spthui);
 }
 
 
@@ -698,7 +729,7 @@ static GtkWidget *setup_playback_controls(struct spthui *spthui)
 {
 	GtkWidget *box;
 
-	GtkWidget *prev, *playback_toggle, *next;
+	GtkWidget *prev, *next;
 
 	box = gtk_hbox_new(FALSE, 0);
 
@@ -719,12 +750,13 @@ static GtkWidget *setup_playback_controls(struct spthui *spthui)
 	next = gtk_button_new_from_stock(GTK_STOCK_MEDIA_NEXT);
 	g_signal_connect(next, "clicked", G_CALLBACK(next_clicked), spthui);
 
-	playback_toggle = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY);
-	g_signal_connect(playback_toggle, "clicked", G_CALLBACK(playback_toggle_clicked), spthui);
+	spthui->playback_toggle = GTK_BUTTON(gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY));
+	g_signal_connect(GTK_WIDGET(spthui->playback_toggle), "clicked",
+			 G_CALLBACK(playback_toggle_clicked), spthui);
 
 
 	gtk_box_pack_start(GTK_BOX(box), prev, FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(box), playback_toggle, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(spthui->playback_toggle), FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(box), next, FALSE, FALSE, 0);
 
 
