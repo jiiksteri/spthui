@@ -520,27 +520,45 @@ static void setup_selection_tracker(GtkTreeView *view, struct spthui *spthui)
 			 G_CALLBACK(track_selection_changed), spthui);
 }
 
+static gboolean view_get_selected(GtkTreeView *view, void **item, enum item_type *item_type, char **name)
+{
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+	GtkTreeSelection *selection;
+	gboolean have_selected;
+
+	selection = gtk_tree_view_get_selection(view);
+	have_selected = gtk_tree_selection_get_selected(selection, &model, &iter);
+
+	if (have_selected) {
+		gtk_tree_model_get(model, &iter,
+				   0, item,
+				   1, item_type,
+				   2, name,
+				   -1);
+	}
+	return have_selected;
+}
+
 static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 				GtkTreeViewColumn *column,
 				void *userdata)
 {
 	struct spthui *spthui = userdata;
-	GtkTreeIter iter;
-	GtkTreeSelection *selection;
-	GtkTreeModel *model;
 	char *name;
 	void *item;
 	enum item_type item_type;
 
 
-
-	selection = gtk_tree_view_get_selection(view);
-	gtk_tree_selection_get_selected(selection, &model, &iter);
-	gtk_tree_model_get(model, &iter,
-			   0, &item,
-			   1, &item_type,
-			   2, &name,
-			   -1);
+	if (!view_get_selected(view, &item, &item_type, &name)) {
+		/* We're an activation callback, so how could
+		 * this happen?
+		 */
+		fprintf(stderr,
+			"%s(): activated without selection? How?\n",
+			__func__);
+		return;
+	}
 
 	switch (item_type) {
 	case ITEM_PLAYLIST:
