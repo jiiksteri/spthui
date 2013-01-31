@@ -540,6 +540,19 @@ static gboolean view_get_selected(GtkTreeView *view, void **item, enum item_type
 	return have_selected;
 }
 
+static void play_current(struct spthui *spthui)
+{
+	enum item_type item_type;
+	void *item;
+	char *name;
+
+	if (view_get_selected(spthui->current_view, &item, &item_type, &name)) {
+		spthui->current_track = item;
+		track_play(spthui, item);
+		ui_update_playing(spthui);
+	}
+}
+
 static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 				GtkTreeViewColumn *column,
 				void *userdata)
@@ -710,26 +723,102 @@ static gboolean spthui_exit(GtkWidget *widget, GdkEvent *event, void *user_data)
 	return FALSE;
 }
 
-static void unimplemented_click(const char *cb, struct spthui *spthui, GtkButton *button)
+static GtkTreePath *view_get_current_path(GtkTreeView *view,
+					  GtkTreeModel **model, GtkTreeSelection **selection)
 {
-	fprintf(stderr, "%s(): UNIMPLEMENTED spthui:%p button:%p\n",
-		cb, spthui, button);
+	GtkTreeIter iter;
+
+	*selection = gtk_tree_view_get_selection(view);
+	return gtk_tree_selection_get_selected(*selection, model, &iter)
+		? gtk_tree_model_get_path(*model, &iter)
+		: NULL;
+}
+
+static GtkTreePath *tree_model_get_path_last(GtkTreeModel *model)
+{
+	GtkTreeIter rover, saved;
+	gboolean more, saved_valid;
+
+	/* Yeah, it's kind of terrible. */
+	saved_valid = FALSE;
+	more = gtk_tree_model_get_iter_first(model, &rover);
+	while (more) {
+		saved = rover;
+		more = gtk_tree_model_iter_next(model, &rover);
+		saved_valid |= more;
+	}
+
+	return saved_valid
+		? gtk_tree_model_get_path(model, &saved)
+		: NULL;
+}
+
+static gboolean navigate_current_prev(struct spthui *spthui)
+{
+	GtkTreeModel *model;
+	GtkTreePath *path;
+	GtkTreeSelection *selection;
+
+	path = view_get_current_path(spthui->current_view, &model, &selection);
+	if (path != NULL) {
+		if (!gtk_tree_path_prev(path)) {
+			gtk_tree_path_free(path);
+			path = tree_model_get_path_last(model);
+		}
+	}
+
+	if (path != NULL) {
+		gtk_tree_selection_select_path(selection, path);
+		gtk_tree_path_free(path);
+	}
+
+	return path != NULL;
+}
+
+static gboolean navigate_current_next(struct spthui *spthui)
+{
+	GtkTreeIter iter;
+	GtkTreeModel *model;
+	GtkTreePath *path;
+	GtkTreeSelection *selection;
+
+	path = view_get_current_path(spthui->current_view, &model, &selection);
+	if (path != NULL) {
+		gtk_tree_path_next(path);
+		if (!gtk_tree_model_get_iter(model, &iter, path) &&
+		    gtk_tree_model_get_iter_first(model, &iter)) {
+
+			gtk_tree_path_free(path);
+			path = gtk_tree_model_get_path(model, &iter);
+		}
+
+	}
+
+	if (path != NULL) {
+		gtk_tree_selection_select_path(selection, path);
+		gtk_tree_path_free(path);
+	}
+
+	return path != NULL;
 
 }
 
 static void prev_clicked(GtkButton *button, void *user_data)
 {
 	struct spthui *spthui = user_data;
-
-	unimplemented_click(__func__, spthui, button);
-
+	if (navigate_current_prev(spthui)) {
+		play_current(spthui);
+		ui_update_playing(spthui);
+	}
 }
 
 static void next_clicked(GtkButton *button, void *user_data)
 {
 	struct spthui *spthui = user_data;
+	if (navigate_current_next(spthui)) {
+		play_current(spthui);
+	}
 
-	unimplemented_click(__func__, spthui, button);
 }
 
 static void playback_toggle_clicked(GtkButton *button, void *user_data)
