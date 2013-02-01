@@ -646,7 +646,7 @@ static GtkNotebook *setup_tabs(struct spthui *spthui)
 	GtkButton *btn;
 
 	tabs = GTK_NOTEBOOK(gtk_notebook_new());
-	g_object_ref_sink(tabs);
+
 	g_signal_connect(tabs, "switch-page",
 			 G_CALLBACK(switch_page), spthui);
 
@@ -672,14 +672,14 @@ static gboolean spthui_exit(GtkWidget *widget, GdkEvent *event, void *user_data)
 	struct spthui *spthui = user_data;
 
 	if (widget == GTK_WIDGET(spthui->main_window)) {
+		g_object_unref(spthui->main_window);
 		spthui->main_window = NULL;
 	}
 
 	if (widget == GTK_WIDGET(spthui->login_dialog)) {
+		g_object_unref(spthui->login_dialog);
 		spthui->login_dialog = NULL;
 	}
-
-	gtk_object_destroy(GTK_OBJECT(widget));
 
 	gtk_main_quit();
 
