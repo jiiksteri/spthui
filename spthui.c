@@ -176,7 +176,6 @@ static void *spotify_worker(void *arg)
 			__func__, sp_error_message(err));
 	}
 	err = spin_logout(spthui->sp_session);
-	sp_session_release(spthui->sp_session);
 	fprintf(stderr, "%s(): exiting (%d)\n", __func__, err);
 	return (void *)err;
 }
@@ -988,6 +987,7 @@ int main(int argc, char **argv)
 	fprintf(stderr, "gtk_main() returned\n");
 
 	err = join_worker(&spthui);
+	sp_session_release(spthui.sp_session);
 
 	audio_free(spthui.audio);
 
