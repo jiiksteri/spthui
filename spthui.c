@@ -399,28 +399,6 @@ static sp_error join_worker(struct spthui *spthui)
 	return err;
 }
 
-static GtkEntry *add_labeled_text_input(GtkBox *container,
-					char *label_text,
-					gboolean visible)
-{
-	GtkWidget *hbox;
-	GtkEntry *entry;
-
-	hbox = gtk_hbox_new(FALSE, 0);
-
-	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_new(label_text), FALSE, FALSE, 0);
-	entry = GTK_ENTRY(gtk_entry_new());
-	gtk_entry_set_width_chars(entry, 32);
-	gtk_entry_set_visibility(entry, visible);
-
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry), FALSE, FALSE, 0);
-
-	gtk_box_pack_start(container, hbox, FALSE, FALSE, 0);
-
-	g_object_ref_sink(entry);
-	return entry;
-}
-
 static void login_clicked(GtkButton *btn, void *data)
 {
 	struct spthui *spthui = data;
@@ -708,8 +686,6 @@ static gboolean spthui_exit(GtkWidget *widget, GdkEvent *event, void *user_data)
 	}
 
 	if (widget == GTK_WIDGET(spthui->login_dialog)) {
-		g_object_unref(spthui->username);
-		g_object_unref(spthui->password);
 		g_object_unref(spthui->login_dialog);
 		spthui->login_dialog = NULL;
 	}
@@ -870,28 +846,74 @@ static GtkWidget *setup_playback_controls(struct spthui *spthui)
 	return box;
 }
 
+static GtkWidget *ui_align_right(GtkWidget *widget)
+{
+	GtkWidget *align;
+
+	align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
+	gtk_container_add(GTK_CONTAINER(align), widget);
+	return align;
+}
+
 static void setup_login_dialog(struct spthui *spthui)
 {
-	GtkBox *vbox;
-	GtkWidget *hbox;
+	GtkBox *hbox, *vbox;
 	GtkWidget *login_btn;
+	GtkWidget *alignment;
 
 	spthui->login_dialog = GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL));
 	g_object_ref_sink(spthui->login_dialog);
 
 	g_signal_connect(spthui->login_dialog, "delete-event", G_CALLBACK(spthui_exit), spthui);
-	gtk_window_set_title(spthui->login_dialog, "Login");
-	gtk_window_set_default_size(spthui->login_dialog, 320, 200);
+	gtk_window_set_title(spthui->login_dialog, "Log in");
 
-	vbox = GTK_BOX(gtk_vbox_new(FALSE, 0));
-	spthui->username = add_labeled_text_input(vbox, "User", TRUE);
-	spthui->password = add_labeled_text_input(vbox, "Password", FALSE);
-	hbox = gtk_hbox_new(FALSE, 0);
-	login_btn = gtk_button_new_with_label("login");
+	/*
+	 *   hbox - - - - - - - - - - - - - - - - - - - - - - -
+	 *   | |-vbox--------|-vbox------------------          |
+	 *     |  user label |  [ username entry ]  |
+	 *   | |  pw label   |  [ password entry ]  | [login]  |
+	 *     |-------------|-----------------------
+	 *   |- - - - - - - - - - - - - - - - - - - - - - - - -|
+	 */
+
+	/* hbox for the label and entry vboxen */
+	hbox = GTK_BOX(gtk_hbox_new(FALSE, 0));
+
+	/* labels */
+	vbox = GTK_BOX(gtk_vbox_new(TRUE, 0));
+	gtk_box_pack_start(vbox, ui_align_right(gtk_label_new("Username")), FALSE, FALSE, 0);
+	gtk_box_pack_start(vbox, ui_align_right(gtk_label_new("Password")), FALSE, FALSE, 0);
+	gtk_box_pack_start(hbox, GTK_WIDGET(vbox), FALSE, FALSE, 5);
+
+
+	/* entries */
+
+	vbox = GTK_BOX(gtk_vbox_new(TRUE, 0));
+	spthui->username = GTK_ENTRY(gtk_entry_new());
+	gtk_entry_set_width_chars(spthui->username, 20);
+	gtk_box_pack_start(vbox, GTK_WIDGET(spthui->username), TRUE, TRUE, 5);
+
+	spthui->password = GTK_ENTRY(gtk_entry_new()); /* password entry */
+	gtk_entry_set_visibility(spthui->password, FALSE);
+	gtk_entry_set_width_chars(spthui->password, 20);
+	gtk_box_pack_start(vbox, GTK_WIDGET(spthui->password), TRUE, TRUE, 5);
+
+	gtk_box_pack_start(hbox, GTK_WIDGET(vbox), FALSE, FALSE, 5);
+
+
+	/* login button */
+
+	login_btn = gtk_button_new_with_label("Log in");
 	g_signal_connect(login_btn, "clicked", G_CALLBACK(login_clicked), spthui);
-	gtk_box_pack_end(GTK_BOX(hbox), GTK_WIDGET(login_btn), FALSE, FALSE, 0);
-	gtk_box_pack_start(vbox, hbox, FALSE, FALSE, 0);
-	gtk_container_add(GTK_CONTAINER(spthui->login_dialog), GTK_WIDGET(vbox));
+
+	alignment = gtk_alignment_new(1.0, 1.0, 0.0, 0.0);
+	gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), 0, 5, 0, 0);
+	gtk_container_add(GTK_CONTAINER(alignment), login_btn);
+	gtk_box_pack_start(hbox, alignment, FALSE, FALSE, 10);
+
+	gtk_container_add(GTK_CONTAINER(spthui->login_dialog), GTK_WIDGET(hbox));
+	gtk_window_set_position(spthui->login_dialog, GTK_WIN_POS_CENTER);
+
 }
 
 int main(int argc, char **argv)
