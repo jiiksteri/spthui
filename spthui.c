@@ -668,31 +668,19 @@ static GtkNotebook *setup_tabs(struct spthui *spthui)
 	return tabs;
 }
 
-static void kill_widget(GtkWidget *widget)
-{
-	if (widget != NULL) {
-		gtk_widget_destroy(widget);
-		g_object_unref(widget);
-	}
-}
-
 static gboolean spthui_exit(GtkWidget *widget, GdkEvent *event, void *user_data)
 {
 	struct spthui *spthui = user_data;
 
 	if (widget == GTK_WIDGET(spthui->main_window)) {
-		g_object_unref(spthui->main_window);
 		spthui->main_window = NULL;
 	}
 
 	if (widget == GTK_WIDGET(spthui->login_dialog)) {
-		g_object_unref(spthui->login_dialog);
 		spthui->login_dialog = NULL;
 	}
 
-	kill_widget(GTK_WIDGET(spthui->main_window));
-	kill_widget(GTK_WIDGET(spthui->login_dialog));
-	kill_widget(GTK_WIDGET(spthui->tabs));
+	gtk_object_destroy(GTK_OBJECT(widget));
 
 	gtk_main_quit();
 
