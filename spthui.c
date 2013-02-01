@@ -870,14 +870,36 @@ static GtkWidget *setup_playback_controls(struct spthui *spthui)
 	return box;
 }
 
+static void setup_login_dialog(struct spthui *spthui)
+{
+	GtkBox *vbox;
+	GtkWidget *hbox;
+	GtkWidget *login_btn;
+
+	spthui->login_dialog = GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL));
+	g_object_ref_sink(spthui->login_dialog);
+
+	g_signal_connect(spthui->login_dialog, "delete-event", G_CALLBACK(spthui_exit), spthui);
+	gtk_window_set_title(spthui->login_dialog, "Login");
+	gtk_window_set_default_size(spthui->login_dialog, 320, 200);
+
+	vbox = GTK_BOX(gtk_vbox_new(FALSE, 0));
+	spthui->username = add_labeled_text_input(vbox, "User", TRUE);
+	spthui->password = add_labeled_text_input(vbox, "Password", FALSE);
+	hbox = gtk_hbox_new(FALSE, 0);
+	login_btn = gtk_button_new_with_label("login");
+	g_signal_connect(login_btn, "clicked", G_CALLBACK(login_clicked), spthui);
+	gtk_box_pack_end(GTK_BOX(hbox), GTK_WIDGET(login_btn), FALSE, FALSE, 0);
+	gtk_box_pack_start(vbox, hbox, FALSE, FALSE, 0);
+	gtk_container_add(GTK_CONTAINER(spthui->login_dialog), GTK_WIDGET(vbox));
+}
+
 int main(int argc, char **argv)
 {
 	sp_session_config config;
 	struct spthui spthui;
 	char *home;
 	GtkBox *vbox;
-	GtkWidget *hbox;
-	GtkWidget *login_btn;
 	int err;
 
 
@@ -923,22 +945,7 @@ int main(int argc, char **argv)
 	pthread_create(&spthui.spotify_worker, (pthread_attr_t *)NULL,
 		       spotify_worker, &spthui);
 
-	spthui.login_dialog = GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL));
-	g_object_ref_sink(spthui.login_dialog);
-
-	g_signal_connect(spthui.login_dialog, "delete-event", G_CALLBACK(spthui_exit), &spthui);
-	gtk_window_set_title(spthui.login_dialog, "Login");
-	gtk_window_set_default_size(spthui.login_dialog, 320, 200);
-
-	vbox = GTK_BOX(gtk_vbox_new(FALSE, 0));
-	spthui.username = add_labeled_text_input(vbox, "User", TRUE);
-	spthui.password = add_labeled_text_input(vbox, "Password", FALSE);
-	hbox = gtk_hbox_new(FALSE, 0);
-	login_btn = gtk_button_new_with_label("login");
-	g_signal_connect(login_btn, "clicked", G_CALLBACK(login_clicked), &spthui);
-	gtk_box_pack_end(GTK_BOX(hbox), GTK_WIDGET(login_btn), FALSE, FALSE, 0);
-	gtk_box_pack_start(vbox, hbox, FALSE, FALSE, 0);
-	gtk_container_add(GTK_CONTAINER(spthui.login_dialog), GTK_WIDGET(vbox));
+	setup_login_dialog(&spthui);
 
 
 	spthui.search = GTK_ENTRY(gtk_entry_new());
