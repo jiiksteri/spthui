@@ -19,6 +19,8 @@
 
 #include "audio.h"
 
+#define SPTHUI_SEARCH_CHUNK 20
+
 enum spthui_state {
 	STATE_RUNNING,
 	STATE_DYING,
@@ -58,6 +60,8 @@ struct spthui {
 	pthread_t spotify_worker;
 
 	struct audio *audio;
+
+	sp_search *search;
 
 };
 
@@ -910,6 +914,46 @@ static void setup_login_dialog(struct spthui *spthui)
 	gtk_widget_grab_default(login_btn);
 }
 
+static void search_complete(sp_search *search, void *userdata)
+{
+	struct spthui *spthui = userdata;
+
+	/* FIXME: results in a new tab. */
+	fprintf(stderr, "%s(): Not implemented\n", __func__);
+	sp_search_release(spthui->search);
+	spthui->search = NULL;
+}
+
+static void init_search(GtkEntry *query, void *user_data)
+{
+	struct spthui *spthui = user_data;
+
+	if (gtk_entry_get_text_length(query) == 0) {
+		return;
+	}
+
+	if (spthui->search != NULL) {
+		sp_search_release(spthui->search);
+		spthui->search = NULL;
+	}
+
+	spthui->search =
+		sp_search_create(spthui->sp_session,
+				 gtk_entry_get_text(query),
+				 /* track offset, count */
+				 0, SPTHUI_SEARCH_CHUNK,
+				 /* album  offset, count */
+				 0, SPTHUI_SEARCH_CHUNK,
+				 /* artist offset, count */
+				 0, SPTHUI_SEARCH_CHUNK,
+				 /* playlist offset, count */
+				 0, SPTHUI_SEARCH_CHUNK,
+				 SP_SEARCH_STANDARD,
+				 search_complete,
+				 spthui);
+
+}
+
 int main(int argc, char **argv)
 {
 	sp_session_config config;
@@ -967,6 +1011,7 @@ int main(int argc, char **argv)
 	vbox = GTK_BOX(gtk_vbox_new(FALSE, 0));
 
 	spthui.query = GTK_ENTRY(gtk_entry_new());
+	g_signal_connect(spthui.query, "activate", G_CALLBACK(init_search), &spthui);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(spthui.query), FALSE, FALSE, 0);
 
 	spthui.tabs = setup_tabs(&spthui);
@@ -994,6 +1039,11 @@ int main(int argc, char **argv)
 	fprintf(stderr, "gtk_main() returned\n");
 
 	err = join_worker(&spthui);
+
+	if (spthui.search != NULL) {
+		sp_search_release(spthui.search);
+	}
+
 	sp_session_release(spthui.sp_session);
 
 	audio_free(spthui.audio);
