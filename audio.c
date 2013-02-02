@@ -94,6 +94,8 @@ void audio_free(struct audio *audio)
 	}
 
 	free(audio);
+
+	snd_config_update_free_global();
 }
 
 static void recover_maybe(struct audio *audio)
