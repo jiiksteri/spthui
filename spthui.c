@@ -880,10 +880,12 @@ static void setup_login_dialog(struct spthui *spthui)
 
 	vbox = GTK_BOX(gtk_vbox_new(TRUE, 0));
 	spthui->username = GTK_ENTRY(gtk_entry_new());
+	gtk_entry_set_activates_default(spthui->username, TRUE);
 	gtk_entry_set_width_chars(spthui->username, 20);
 	gtk_box_pack_start(vbox, GTK_WIDGET(spthui->username), TRUE, TRUE, 5);
 
 	spthui->password = GTK_ENTRY(gtk_entry_new()); /* password entry */
+	gtk_entry_set_activates_default(spthui->password, TRUE);
 	gtk_entry_set_visibility(spthui->password, FALSE);
 	gtk_entry_set_width_chars(spthui->password, 20);
 	gtk_box_pack_start(vbox, GTK_WIDGET(spthui->password), TRUE, TRUE, 5);
@@ -904,6 +906,8 @@ static void setup_login_dialog(struct spthui *spthui)
 	gtk_container_add(GTK_CONTAINER(spthui->login_dialog), GTK_WIDGET(hbox));
 	gtk_window_set_position(spthui->login_dialog, GTK_WIN_POS_CENTER);
 
+	gtk_widget_set_can_default(login_btn, TRUE);
+	gtk_widget_grab_default(login_btn);
 }
 
 int main(int argc, char **argv)
