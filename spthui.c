@@ -36,7 +36,7 @@ struct spthui {
 	int try_login;
 
 	GtkWindow *main_window;
-	GtkEntry *search;
+	GtkEntry *query;
 
 	GtkNotebook *tabs;
 	GtkLabel *track_info;
@@ -964,10 +964,10 @@ int main(int argc, char **argv)
 	setup_login_dialog(&spthui);
 
 
-	spthui.search = GTK_ENTRY(gtk_entry_new());
 	vbox = GTK_BOX(gtk_vbox_new(FALSE, 0));
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(spthui.search),
-			   FALSE, FALSE, 0);
+
+	spthui.query = GTK_ENTRY(gtk_entry_new());
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(spthui.query), FALSE, FALSE, 0);
 
 	spthui.tabs = setup_tabs(&spthui);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(spthui.tabs),
