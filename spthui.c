@@ -121,9 +121,12 @@ static GtkTreeView *tab_add(GtkNotebook *tabs, const char *label_text)
 static GtkTreeView *tab_get(GtkNotebook *tabs, int ind)
 {
 	GList *children;
+	GtkTreeView *tab;
 
 	children = gtk_container_get_children(GTK_CONTAINER(gtk_notebook_get_nth_page(tabs, ind)));
-	return GTK_TREE_VIEW(children->data);
+	tab = GTK_TREE_VIEW(children->data);
+	g_list_free(children);
+	return tab;
 }
 
 static sp_error process_events(sp_session *session, struct timespec *timeout)

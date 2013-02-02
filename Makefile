@@ -31,6 +31,7 @@ LDFLAGS += -L$(LIBSPOTIFY_PATH)/lib -Wl,--rpath=$(LIBSPOTIFY_PATH)/lib \
 	-lgtk-x11-2.0 \
 	-lgdk-x11-2.0 \
 	-lgobject-2.0 \
+	-lglib-2.0 \
 	-lasound \
 
 
