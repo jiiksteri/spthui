@@ -100,7 +100,7 @@ static GtkTreeView *spthui_list_new(void)
 }
 
 
-static GtkTreeView *tab_add(GtkNotebook *tabs, const char *label_text)
+static GtkTreeView *tab_add(struct spthui *spthui, const char *label_text)
 {
 	GtkWidget *win;
 	GtkTreeView *view;
@@ -115,7 +115,7 @@ static GtkTreeView *tab_add(GtkNotebook *tabs, const char *label_text)
 	label = gtk_label_new(label_text);
 	gtk_label_set_max_width_chars(GTK_LABEL(label), 10);
 
-	gtk_notebook_append_page(tabs, win, label);
+	gtk_notebook_append_page(spthui->tabs, win, label);
 	gtk_widget_show_all(win);
 
 	return view;
@@ -559,7 +559,7 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 
 	switch (item_type) {
 	case ITEM_PLAYLIST:
-		view = tab_add(spthui->tabs, name);
+		view = tab_add(spthui, name);
 		setup_selection_tracker(view, spthui);
 		g_signal_connect(view, "row-activated",
 				 G_CALLBACK(list_item_activated), spthui);
@@ -646,32 +646,30 @@ static void switch_page(GtkNotebook *notebook, GtkWidget *page,
 	spthui->selected_view = tab_get(notebook, page_num);
 }
 
-static GtkNotebook *setup_tabs(struct spthui *spthui)
+static void setup_tabs(struct spthui *spthui)
 {
 	GtkTreeView *view;
-	GtkNotebook *tabs;
 	GtkButton *btn;
 
-	tabs = GTK_NOTEBOOK(gtk_notebook_new());
+	spthui->tabs = GTK_NOTEBOOK(gtk_notebook_new());
 
-	g_signal_connect(tabs, "switch-page",
+	g_signal_connect(spthui->tabs, "switch-page",
 			 G_CALLBACK(switch_page), spthui);
 
 	btn = GTK_BUTTON(gtk_button_new());
 	gtk_button_set_image(btn,
 			     gtk_image_new_from_stock(GTK_STOCK_CLOSE,
 						      GTK_ICON_SIZE_SMALL_TOOLBAR));
-	gtk_notebook_set_action_widget(tabs, GTK_WIDGET(btn), GTK_PACK_END);
+	gtk_notebook_set_action_widget(spthui->tabs, GTK_WIDGET(btn), GTK_PACK_END);
 	g_signal_connect(GTK_WIDGET(btn), "clicked",
-			 G_CALLBACK(close_selected_tab), tabs);
+			 G_CALLBACK(close_selected_tab), spthui->tabs);
 	gtk_widget_show_all(GTK_WIDGET(btn));
 
-	view = tab_add(tabs, "Playlists");
+	view = tab_add(spthui, "Playlists");
 
 	g_signal_connect(view, "row-activated",
 			 G_CALLBACK(list_item_activated), spthui);
 
-	return tabs;
 }
 
 static gboolean spthui_exit(GtkWidget *widget, GdkEvent *event, void *user_data)
@@ -1014,7 +1012,7 @@ int main(int argc, char **argv)
 	g_signal_connect(spthui.query, "activate", G_CALLBACK(init_search), &spthui);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(spthui.query), FALSE, FALSE, 0);
 
-	spthui.tabs = setup_tabs(&spthui);
+	setup_tabs(&spthui);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(spthui.tabs),
 			   TRUE, TRUE, 0);
 
