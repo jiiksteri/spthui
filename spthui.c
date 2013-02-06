@@ -627,13 +627,13 @@ static int read_app_key(const void **bufp, size_t *sizep)
 
 static void close_selected_tab(GtkButton *btn, void *userdata)
 {
-	GtkNotebook *tabs = userdata;
+	struct spthui *spthui = userdata;
 	int current;
 
-	current = gtk_notebook_get_current_page(tabs);
+	current = gtk_notebook_get_current_page(spthui->tabs);
 	/* Don't allow closing of the first tab */
 	if (current > 0) {
-		gtk_notebook_remove_page(tabs, current);
+		gtk_notebook_remove_page(spthui->tabs, current);
 	}
 }
 
@@ -662,7 +662,7 @@ static void setup_tabs(struct spthui *spthui)
 						      GTK_ICON_SIZE_SMALL_TOOLBAR));
 	gtk_notebook_set_action_widget(spthui->tabs, GTK_WIDGET(btn), GTK_PACK_END);
 	g_signal_connect(GTK_WIDGET(btn), "clicked",
-			 G_CALLBACK(close_selected_tab), spthui->tabs);
+			 G_CALLBACK(close_selected_tab), spthui);
 	gtk_widget_show_all(GTK_WIDGET(btn));
 
 	view = tab_add(spthui, "Playlists");
