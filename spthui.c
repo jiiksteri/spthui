@@ -26,6 +26,34 @@ enum spthui_state {
 	STATE_DYING,
 };
 
+enum item_type {
+	ITEM_NONE,
+	ITEM_PLAYLIST,
+	ITEM_TRACK,
+};
+
+struct item {
+	enum item_type type;
+	void *item;
+};
+
+void item_free(struct item *item)
+{
+	switch (item->type) {
+	case ITEM_NONE:
+		free(item->item);
+		break;
+	case ITEM_PLAYLIST:
+		sp_playlist_release(item->item);
+		break;
+	case ITEM_TRACK:
+		sp_track_release(item->item);
+		break;
+	}
+
+	free(item);
+}
+
 struct spthui {
 
 	sp_session *sp_session;
@@ -40,7 +68,11 @@ struct spthui {
 	GtkWindow *main_window;
 	GtkEntry *query;
 
+	/* tab bookkeeping */
 	GtkNotebook *tabs;
+	struct item **tab_items;
+	int n_tab_items;
+
 	GtkLabel *track_info;
 
 	GtkButton *playback_toggle;
@@ -63,12 +95,6 @@ struct spthui {
 
 	sp_search *search;
 
-};
-
-enum item_type {
-	ITEM_NONE,
-	ITEM_PLAYLIST,
-	ITEM_TRACK,
 };
 
 /* wants more columns, obviously */
@@ -100,12 +126,23 @@ static GtkTreeView *spthui_list_new(void)
 }
 
 
-static GtkTreeView *tab_add(struct spthui *spthui, const char *label_text)
+static GtkTreeView *tab_add(struct spthui *spthui, const char *label_text,
+			    enum item_type item_type, void *item_item)
 {
 	GtkWidget *win;
 	GtkTreeView *view;
 	GtkWidget *label;
+	struct item *item;
+	int n_pages;
 
+	if ((item = malloc(sizeof(*item))) != NULL) {
+		item->type = item_type;
+		item->item = item_item;
+	} else {
+		fprintf(stderr,
+			"%s(): failed to allocate item."
+			"Expect terrible things", __func__);
+	}
 
 	view = spthui_list_new();
 
@@ -115,7 +152,20 @@ static GtkTreeView *tab_add(struct spthui *spthui, const char *label_text)
 	label = gtk_label_new(label_text);
 	gtk_label_set_max_width_chars(GTK_LABEL(label), 10);
 
+	n_pages = gtk_notebook_get_n_pages(spthui->tabs);
+	if (n_pages >= spthui->n_tab_items) {
+		spthui->tab_items = realloc(spthui->tab_items,
+					    (spthui->n_tab_items + 5) *
+					    sizeof(*spthui->tab_items));
+		spthui->n_tab_items += 5;
+		memset(&spthui->tab_items[n_pages], 0,
+		       (spthui->n_tab_items - n_pages) * sizeof(*spthui->tab_items));
+
+	}
+
+	spthui->tab_items[n_pages] = item;
 	gtk_notebook_append_page(spthui->tabs, win, label);
+
 	gtk_widget_show_all(win);
 
 	return view;
@@ -241,6 +291,7 @@ static void do_add_playlists(sp_playlistcontainer *playlists, void *userdata)
 	gtk_list_store_clear(GTK_LIST_STORE(gtk_tree_view_get_model(tab_get(spthui->tabs, 0))));
 	for (i = 0; i < n; i++) {
 		pl = sp_playlistcontainer_playlist(playlists, i);
+		sp_playlist_add_ref(pl);
 		add_playlist(spthui, pl);
 	}
 	gdk_threads_leave();
@@ -559,10 +610,11 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 
 	switch (item_type) {
 	case ITEM_PLAYLIST:
-		view = tab_add(spthui, name);
+		view = tab_add(spthui, name, item_type, item);
 		setup_selection_tracker(view, spthui);
 		g_signal_connect(view, "row-activated",
 				 G_CALLBACK(list_item_activated), spthui);
+		sp_playlist_add_ref(item);
 		playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)), item);
 		break;
 	case ITEM_TRACK:
@@ -634,6 +686,12 @@ static void close_selected_tab(GtkButton *btn, void *userdata)
 	/* Don't allow closing of the first tab */
 	if (current > 0) {
 		gtk_notebook_remove_page(spthui->tabs, current);
+		item_free(spthui->tab_items[current]);
+		spthui->tab_items[current] = NULL;
+		while (++current < spthui->n_tab_items && spthui->tab_items[current]) {
+			spthui->tab_items[current-1] = spthui->tab_items[current];
+			spthui->tab_items[current] = NULL;
+		}
 	}
 }
 
@@ -652,6 +710,7 @@ static void setup_tabs(struct spthui *spthui)
 	GtkButton *btn;
 
 	spthui->tabs = GTK_NOTEBOOK(gtk_notebook_new());
+	spthui->tab_items = malloc(5 * sizeof(*spthui->tab_items));
 
 	g_signal_connect(spthui->tabs, "switch-page",
 			 G_CALLBACK(switch_page), spthui);
@@ -665,7 +724,7 @@ static void setup_tabs(struct spthui *spthui)
 			 G_CALLBACK(close_selected_tab), spthui);
 	gtk_widget_show_all(GTK_WIDGET(btn));
 
-	view = tab_add(spthui, "Playlists");
+	view = tab_add(spthui, "Playlists", ITEM_NONE, NULL);
 
 	g_signal_connect(view, "row-activated",
 			 G_CALLBACK(list_item_activated), spthui);
@@ -958,7 +1017,7 @@ int main(int argc, char **argv)
 	struct spthui spthui;
 	char *home;
 	GtkBox *vbox;
-	int err;
+	int err, i;
 
 
 	gdk_threads_init();
@@ -1040,6 +1099,12 @@ int main(int argc, char **argv)
 
 	if (spthui.search != NULL) {
 		sp_search_release(spthui.search);
+	}
+
+	if (spthui.tab_items != NULL) {
+		for (i = 0; spthui.tab_items[i]; i++) {
+			item_free(spthui.tab_items[i]);
+		}
 	}
 
 	sp_session_release(spthui.sp_session);
