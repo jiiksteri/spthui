@@ -677,6 +677,11 @@ static int read_app_key(const void **bufp, size_t *sizep)
 	return 0;
 }
 
+/* FIXME: Move the whole function here. Better yet, move
+ * it to a separate module
+ */
+static void playback_toggle_clicked(GtkButton *button, void *user_data);
+
 static void close_selected_tab(GtkButton *btn, void *userdata)
 {
 	struct spthui *spthui = userdata;
@@ -685,6 +690,24 @@ static void close_selected_tab(GtkButton *btn, void *userdata)
 	current = gtk_notebook_get_current_page(spthui->tabs);
 	/* Don't allow closing of the first tab */
 	if (current > 0) {
+
+		/* If the tab being closed is the current one
+		 * and we have a track playing off it, stop playback
+		 * and clear ->current_{view,track}
+		 */
+		if (tab_get(spthui->tabs, current) == spthui->current_view &&
+		    spthui->playing) {
+
+			/* XXX: Needs locking against spotify threads, see
+			 * ->end_of_track()
+			 *
+			 * We kind of cheat by calling the toggle cb directly
+			 */
+			spthui->current_track = NULL;
+			spthui->current_view = NULL;
+			playback_toggle_clicked(spthui->playback_toggle, spthui);
+		}
+
 		gtk_notebook_remove_page(spthui->tabs, current);
 		item_free(spthui->tab_items[current]);
 		spthui->tab_items[current] = NULL;
