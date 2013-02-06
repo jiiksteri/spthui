@@ -291,6 +291,12 @@ static void do_add_playlists(sp_playlistcontainer *playlists, void *userdata)
 	gtk_list_store_clear(GTK_LIST_STORE(gtk_tree_view_get_model(tab_get(spthui->tabs, 0))));
 	for (i = 0; i < n; i++) {
 		pl = sp_playlistcontainer_playlist(playlists, i);
+		/* FIXME: We don't unref this anywhere.
+		 * We _add_ref() the playlist when we expand it,
+		 * so we can do item_free() on its containing
+		 * struct item. But we don't free the root
+		 * playlist container now...
+		 */
 		sp_playlist_add_ref(pl);
 		add_playlist(spthui, pl);
 	}
