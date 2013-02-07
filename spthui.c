@@ -1134,6 +1134,7 @@ int main(int argc, char **argv)
 		for (i = 0; spthui.tab_items[i]; i++) {
 			item_free(spthui.tab_items[i]);
 		}
+		free(spthui.tab_items);
 	}
 
 	sp_session_release(spthui.sp_session);
