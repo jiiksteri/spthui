@@ -19,6 +19,7 @@
 
 #include "audio.h"
 #include "item.h"
+#include "search.h"
 
 #define SPTHUI_SEARCH_CHUNK 20
 
@@ -66,9 +67,6 @@ struct spthui {
 	pthread_t spotify_worker;
 
 	struct audio *audio;
-
-	sp_search *search;
-
 };
 
 /* wants more columns, obviously */
@@ -971,30 +969,51 @@ static void setup_login_dialog(struct spthui *spthui)
 	gtk_widget_grab_default(login_btn);
 }
 
-static void search_complete(sp_search *search, void *userdata)
+static void search_complete(sp_search *sp_search, void *userdata)
 {
-	struct spthui *spthui = userdata;
+	struct item *item = userdata;
+	struct search *search = item_search(item);
+	int i;
 
-	/* FIXME: results in a new tab. */
-	fprintf(stderr, "%s(): Not implemented\n", __func__);
-	sp_search_release(spthui->search);
-	spthui->search = NULL;
+	gdk_threads_enter();
+	for (i = 0; i < sp_search_num_tracks(sp_search); i++) {
+		add_track(search->store, sp_search_track(sp_search, i));
+	}
+	gdk_threads_leave();
 }
 
 static void init_search(GtkEntry *query, void *user_data)
 {
 	struct spthui *spthui = user_data;
+	struct search *search;
+	GtkTreeView *view;
+	struct item *item;
 
 	if (gtk_entry_get_text_length(query) == 0) {
 		return;
 	}
 
-	if (spthui->search != NULL) {
-		sp_search_release(spthui->search);
-		spthui->search = NULL;
+	if ((search = malloc(sizeof(*search))) == NULL) {
+		fprintf(stderr,
+			"%s(): %s\n", __func__, strerror(errno));
+		return;
 	}
 
-	spthui->search =
+	search->name = strdup(gtk_entry_get_text(query));
+
+	if ((item = item_init_search(search)) == NULL) {
+		fprintf(stderr,
+			"%s(): %s\n", __func__, strerror(errno));
+	}
+
+	view = tab_add(spthui, search->name, item);
+
+	g_signal_connect(view, "row-activated",
+			 G_CALLBACK(list_item_activated), spthui);
+
+
+	search->store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
+	search->search =
 		sp_search_create(spthui->sp_session,
 				 gtk_entry_get_text(query),
 				 /* track offset, count */
@@ -1007,7 +1026,7 @@ static void init_search(GtkEntry *query, void *user_data)
 				 0, SPTHUI_SEARCH_CHUNK,
 				 SP_SEARCH_STANDARD,
 				 search_complete,
-				 spthui);
+				 item);
 
 }
 
@@ -1096,10 +1115,6 @@ int main(int argc, char **argv)
 	fprintf(stderr, "gtk_main() returned\n");
 
 	err = join_worker(&spthui);
-
-	if (spthui.search != NULL) {
-		sp_search_release(spthui.search);
-	}
 
 	if (spthui.tab_items != NULL) {
 		for (i = 0; spthui.tab_items[i]; i++) {
