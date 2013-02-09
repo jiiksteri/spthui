@@ -18,6 +18,7 @@
 #include <libspotify/api.h>
 
 #include "audio.h"
+#include "item.h"
 
 #define SPTHUI_SEARCH_CHUNK 20
 
@@ -26,33 +27,6 @@ enum spthui_state {
 	STATE_DYING,
 };
 
-enum item_type {
-	ITEM_NONE,
-	ITEM_PLAYLIST,
-	ITEM_TRACK,
-};
-
-struct item {
-	enum item_type type;
-	void *item;
-};
-
-void item_free(struct item *item)
-{
-	switch (item->type) {
-	case ITEM_NONE:
-		free(item->item);
-		break;
-	case ITEM_PLAYLIST:
-		sp_playlist_release(item->item);
-		break;
-	case ITEM_TRACK:
-		sp_track_release(item->item);
-		break;
-	}
-
-	free(item);
-}
 
 struct spthui {
 
@@ -135,10 +109,7 @@ static GtkTreeView *tab_add(struct spthui *spthui, const char *label_text,
 	struct item *item;
 	int n_pages;
 
-	if ((item = malloc(sizeof(*item))) != NULL) {
-		item->type = item_type;
-		item->item = item_item;
-	} else {
+	if ((item = item_init(item_type, item_item)) == NULL) {
 		fprintf(stderr,
 			"%s(): failed to allocate item."
 			"Expect terrible things", __func__);
