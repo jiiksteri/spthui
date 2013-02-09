@@ -198,22 +198,60 @@ static void *spotify_worker(void *arg)
 	return (void *)err;
 }
 
-static void add_pl_or_name(GtkTreeView *list, sp_playlist *pl)
-{
+struct pl_find_ctx {
+	sp_playlist *needle;
+	struct item *found;
 	GtkTreeIter iter;
-	GtkListStore *store;
-	struct item *item;
+};
 
-	if ((item = item_init_playlist(pl)) == NULL) {
-		fprintf(stderr, "%s(): %s\n",
-			__func__, strerror(errno));
-		return;
+static gboolean pl_find_foreach(GtkTreeModel *model,
+				GtkTreePath *path,
+				GtkTreeIter *iter,
+				gpointer data)
+{
+	struct item *candidate;
+	struct pl_find_ctx *ctx = data;
+
+	gtk_tree_model_get(model, iter,
+			   0, &candidate,
+			   -1);
+
+	/* They must have a unique id or link or whatever.. so far
+	 * we just compare the playlist pointers and rely on libspotify
+	 * giving us the same object via its own refcounted sharing
+	 */
+	if (item_playlist(candidate) == ctx->needle) {
+		ctx->found = candidate;
+		ctx->iter = *iter;
 	}
 
+	return ctx->found != NULL;
+}
+
+
+static void add_pl_or_name(GtkTreeView *list, sp_playlist *pl)
+{
+	GtkListStore *store;
+	struct pl_find_ctx ctx = {
+		.found = NULL,
+		.needle = pl,
+	};
+
 	store = GTK_LIST_STORE(gtk_tree_view_get_model(list));
-	gtk_list_store_append(store, &iter);
-	gtk_list_store_set(store, &iter,
-			   0, item,
+
+	gtk_tree_model_foreach(GTK_TREE_MODEL(store), pl_find_foreach, &ctx);
+
+	if (ctx.found == NULL) {
+		if ((ctx.found = item_init_playlist(pl)) == NULL) {
+			fprintf(stderr, "%s(): %s\n",
+				__func__, strerror(errno));
+			return;
+		}
+		gtk_list_store_append(store, &ctx.iter);
+	}
+
+	gtk_list_store_set(store, &ctx.iter,
+			   0, ctx.found,
 			   1, sp_playlist_name(pl),
 			   -1);
 }
