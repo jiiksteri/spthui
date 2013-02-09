@@ -74,8 +74,7 @@ struct spthui {
 /* wants more columns, obviously */
 static GType list_columns[] = {
 	G_TYPE_POINTER, /* item itself */
-	G_TYPE_INT,     /* enum item_type */
-	G_TYPE_STRING,
+	G_TYPE_STRING,  /* item name */
 };
 
 static GtkTreeView *spthui_list_new(void)
@@ -93,7 +92,7 @@ static GtkTreeView *spthui_list_new(void)
 
 	column = gtk_tree_view_column_new_with_attributes("Item",
 							  gtk_cell_renderer_text_new(),
-							  "text", 2,
+							  "text", 1,
 							  NULL);
 	gtk_tree_view_append_column(view, column);
 	return view;
@@ -212,13 +211,19 @@ static void add_pl_or_name(GtkTreeView *list, sp_playlist *pl)
 {
 	GtkTreeIter iter;
 	GtkListStore *store;
+	struct item *item;
+
+	if ((item = item_init(ITEM_PLAYLIST, pl)) == NULL) {
+		fprintf(stderr, "%s(): %s\n",
+			__func__, strerror(errno));
+		return;
+	}
 
 	store = GTK_LIST_STORE(gtk_tree_view_get_model(list));
 	gtk_list_store_append(store, &iter);
 	gtk_list_store_set(store, &iter,
-			   0, pl,
-			   1, ITEM_PLAYLIST,
-			   2, sp_playlist_name(pl),
+			   0, item,
+			   1, sp_playlist_name(pl),
 			   -1);
 }
 
@@ -452,12 +457,18 @@ static void login_clicked(GtkButton *btn, void *data)
 static void add_track(GtkListStore *store, sp_track *track)
 {
 	GtkTreeIter iter;
+	struct item *item;
+
+	if ((item = item_init(ITEM_TRACK, track)) == NULL) {
+		fprintf(stderr, "%s(): %s\n",
+			__func__, strerror(errno));
+		return;
+	}
 
 	gtk_list_store_append(store, &iter);
 	gtk_list_store_set(store, &iter,
-			   0, track,
-			   1, ITEM_TRACK,
-			   2, sp_track_name(track),
+			   0, item,
+			   1, sp_track_name(track),
 			   -1);
 }
 
@@ -499,21 +510,19 @@ static void track_selection_changed(GtkTreeSelection *selection, void *userdata)
 	struct spthui *spthui = userdata;
 	GtkTreeIter iter;
 	GtkTreeModel *model;
-	void *selected;
-	enum item_type item_type;
+	struct item *selected;
 
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 
 		gtk_tree_model_get(model, &iter,
 				   0, &selected,
-				   1, &item_type,
 				   -1);
 
-		if (item_type != ITEM_TRACK) {
+		if (item_type(selected) != ITEM_TRACK) {
 			fprintf(stderr, "%s(): no idea how to handle item_type %d\n",
-				__func__, item_type);
+				__func__, item_type(selected));
 		} else {
-			spthui->selected_track = selected;
+			spthui->selected_track = item_track(selected);
 		}
 	}
 
@@ -532,7 +541,7 @@ static void setup_selection_tracker(GtkTreeView *view, struct spthui *spthui)
 			 G_CALLBACK(track_selection_changed), spthui);
 }
 
-static gboolean view_get_selected(GtkTreeView *view, void **item, enum item_type *item_type, char **name)
+static gboolean view_get_selected(GtkTreeView *view, struct item **item, char **name)
 {
 	GtkTreeModel *model;
 	GtkTreeIter iter;
@@ -545,8 +554,7 @@ static gboolean view_get_selected(GtkTreeView *view, void **item, enum item_type
 	if (have_selected) {
 		gtk_tree_model_get(model, &iter,
 				   0, item,
-				   1, item_type,
-				   2, name,
+				   1, name,
 				   -1);
 	}
 	return have_selected;
@@ -554,13 +562,12 @@ static gboolean view_get_selected(GtkTreeView *view, void **item, enum item_type
 
 static void play_current(struct spthui *spthui)
 {
-	enum item_type item_type;
-	void *item;
+	struct item *item;
 	char *name;
 
-	if (view_get_selected(spthui->current_view, &item, &item_type, &name)) {
-		spthui->current_track = item;
-		track_play(spthui, item);
+	if (view_get_selected(spthui->current_view, &item, &name)) {
+		spthui->current_track = item_track(item);
+		track_play(spthui, item_track(item));
 		ui_update_playing(spthui);
 	}
 }
@@ -571,11 +578,9 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 {
 	struct spthui *spthui = userdata;
 	char *name;
-	void *item;
-	enum item_type item_type;
+	struct item *item;
 
-
-	if (!view_get_selected(view, &item, &item_type, &name)) {
+	if (!view_get_selected(view, &item, &name)) {
 		/* We're an activation callback, so how could
 		 * this happen?
 		 */
@@ -585,22 +590,24 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 		return;
 	}
 
-	switch (item_type) {
+	switch (item_type(item)) {
 	case ITEM_PLAYLIST:
-		view = tab_add(spthui, name, item_type, item);
+		view = tab_add(spthui, name, item_type(item), item_playlist(item));
 		setup_selection_tracker(view, spthui);
 		g_signal_connect(view, "row-activated",
 				 G_CALLBACK(list_item_activated), spthui);
-		sp_playlist_add_ref(item);
-		playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)), item);
+		sp_playlist_add_ref(item_playlist(item));
+		playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)),
+				     item_playlist(item));
 		break;
 	case ITEM_TRACK:
 		spthui->current_view = view;
-		spthui->current_track = item;
-		track_play(spthui, item);
+		spthui->current_track = item_track(item);
+		track_play(spthui, item_track(item));
 		break;
 	default:
-		fprintf(stderr, "%s(): unknown item in list, type %d\n", __func__, item_type);
+		fprintf(stderr, "%s(): unknown item in list, type %d\n",
+			__func__, item_type(item));
 		break;
 	}
 }

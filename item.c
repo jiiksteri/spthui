@@ -2,6 +2,7 @@
 
 #include <libspotify/api.h>
 #include <stdlib.h>
+#include <assert.h>
 
 struct item {
 	enum item_type type;
@@ -41,4 +42,16 @@ void item_free(struct item *item)
 enum item_type item_type(struct item *item)
 {
 	return item->type;
+}
+
+sp_track *item_track(struct item *item)
+{
+	assert(item->type == ITEM_TRACK);
+	return item->item;
+}
+
+sp_playlist *item_playlist(struct item *item)
+{
+	assert(item->type == ITEM_PLAYLIST);
+	return item->item;
 }
