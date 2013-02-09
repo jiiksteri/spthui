@@ -206,7 +206,7 @@ static void add_pl_or_name(GtkTreeView *list, sp_playlist *pl)
 	GtkListStore *store;
 	struct item *item;
 
-	if ((item = item_init(ITEM_PLAYLIST, pl)) == NULL) {
+	if ((item = item_init_playlist(pl)) == NULL) {
 		fprintf(stderr, "%s(): %s\n",
 			__func__, strerror(errno));
 		return;
@@ -452,7 +452,7 @@ static void add_track(GtkListStore *store, sp_track *track)
 	GtkTreeIter iter;
 	struct item *item;
 
-	if ((item = item_init(ITEM_TRACK, track)) == NULL) {
+	if ((item = item_init_track(track)) == NULL) {
 		fprintf(stderr, "%s(): %s\n",
 			__func__, strerror(errno));
 		return;
@@ -724,7 +724,7 @@ static void setup_tabs(struct spthui *spthui)
 			 G_CALLBACK(close_selected_tab), spthui);
 	gtk_widget_show_all(GTK_WIDGET(btn));
 
-	view = tab_add(spthui, "Playlists", item_init(ITEM_NONE, NULL));
+	view = tab_add(spthui, "Playlists", item_init_none());
 
 	g_signal_connect(view, "row-activated",
 			 G_CALLBACK(list_item_activated), spthui);

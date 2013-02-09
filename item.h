@@ -11,7 +11,10 @@ enum item_type {
 
 struct item;
 
-struct item *item_init(enum item_type type, void *p);
+struct item *item_init_playlist(sp_playlist *pl);
+struct item *item_init_track(sp_track *track);
+struct item *item_init_none(void);
+
 void item_free(struct item *item);
 
 enum item_type item_type(struct item *item);

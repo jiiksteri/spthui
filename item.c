@@ -9,7 +9,7 @@ struct item {
 	void *item;
 };
 
-struct item *item_init(enum item_type type, void *p)
+static struct item *item_init(enum item_type type, void *p)
 {
 	struct item *item;
 
@@ -19,6 +19,21 @@ struct item *item_init(enum item_type type, void *p)
 	}
 
 	return item;
+}
+
+struct item *item_init_playlist(sp_playlist *pl)
+{
+	return item_init(ITEM_PLAYLIST, pl);
+}
+
+struct item *item_init_track(sp_track *track)
+{
+	return item_init(ITEM_TRACK, track);
+}
+
+struct item *item_init_none(void)
+{
+	return item_init(ITEM_NONE, NULL);
 }
 
 void item_free(struct item *item)
