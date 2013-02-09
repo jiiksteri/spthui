@@ -100,19 +100,12 @@ static GtkTreeView *spthui_list_new(void)
 
 
 static GtkTreeView *tab_add(struct spthui *spthui, const char *label_text,
-			    enum item_type item_type, void *item_item)
+			    struct item *item)
 {
 	GtkWidget *win;
 	GtkTreeView *view;
 	GtkWidget *label;
-	struct item *item;
 	int n_pages;
-
-	if ((item = item_init(item_type, item_item)) == NULL) {
-		fprintf(stderr,
-			"%s(): failed to allocate item."
-			"Expect terrible things", __func__);
-	}
 
 	view = spthui_list_new();
 
@@ -592,7 +585,7 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 
 	switch (item_type(item)) {
 	case ITEM_PLAYLIST:
-		view = tab_add(spthui, name, item_type(item), item_playlist(item));
+		view = tab_add(spthui, name, item);
 		setup_selection_tracker(view, spthui);
 		g_signal_connect(view, "row-activated",
 				 G_CALLBACK(list_item_activated), spthui);
@@ -731,7 +724,7 @@ static void setup_tabs(struct spthui *spthui)
 			 G_CALLBACK(close_selected_tab), spthui);
 	gtk_widget_show_all(GTK_WIDGET(btn));
 
-	view = tab_add(spthui, "Playlists", ITEM_NONE, NULL);
+	view = tab_add(spthui, "Playlists", item_init(ITEM_NONE, NULL));
 
 	g_signal_connect(view, "row-activated",
 			 G_CALLBACK(list_item_activated), spthui);
