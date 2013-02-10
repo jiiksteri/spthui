@@ -12,7 +12,7 @@ struct playback_panel {
 	GtkWidget *box;
 
 	GtkButton *playback_toggle;
-	GtkLabel *track_info;
+	GtkProgressBar *track_info;
 
 	struct playback_panel_ops *ops;
 	void *cb_data;
@@ -55,9 +55,10 @@ struct playback_panel *playback_panel_init(struct playback_panel_ops *ops,
 	 */
 	g_object_ref_sink(panel->box);
 
-	panel->track_info = GTK_LABEL(gtk_label_new("Not playing"));
+	panel->track_info = GTK_PROGRESS_BAR(gtk_progress_bar_new());
+	g_object_set(panel->track_info, "show-text", TRUE, NULL);
+	gtk_progress_bar_set_text(panel->track_info, "Not playing");
 
-	gtk_misc_set_alignment(GTK_MISC(panel->track_info), 0.0, 0.5);
 	gtk_box_pack_start(GTK_BOX(panel->box), GTK_WIDGET(panel->track_info),
 			   TRUE, TRUE, 0);
 
@@ -106,7 +107,7 @@ void playback_panel_set_info(struct playback_panel *panel,
 
 	name = track != NULL ? sp_track_name(track) : "<no track>";
 
-	gtk_label_set_text(panel->track_info, name);
+	gtk_progress_bar_set_text(panel->track_info, name);
 	gtk_button_set_label(panel->playback_toggle, stock);
 
 }
