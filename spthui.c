@@ -20,6 +20,7 @@
 #include "audio.h"
 #include "item.h"
 #include "search.h"
+#include "popup.h"
 
 #define SPTHUI_SEARCH_CHUNK 20
 
@@ -75,6 +76,41 @@ static GType list_columns[] = {
 	G_TYPE_STRING,  /* item name */
 };
 
+static void expand_item(struct item *item, void *user_data)
+{
+	struct spthui *spthui = user_data;
+	fprintf(stderr, "%s(): not implemented. spthui=%p\n", __func__, spthui);
+}
+
+static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, void *user_data)
+{
+	struct spthui *spthui = user_data;
+	GtkTreeSelection *selection;
+	GtkTreeModel *model;
+	struct item *item;
+	char *name;
+	GtkTreeIter iter;
+
+	fprintf(stderr, "%s(): widget=%p(%s) button=%u user_data=%p\n",
+		__func__, widget, G_OBJECT_TYPE_NAME(widget), event->button, user_data);
+
+	if (event->button == 3) {
+		selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
+		if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
+			gtk_tree_model_get(model, &iter,
+					   0, &item,
+					   1, &name,
+					   -1);
+			popup_show(item, name, event->button, event->time,
+				   expand_item, spthui);
+		} else {
+			fprintf(stderr, "%s(): nothing selected\n", __func__);
+		}
+	}
+
+	return FALSE;
+}
+
 static GtkTreeView *spthui_list_new(void)
 {
 	GtkTreeView *view;
@@ -106,6 +142,13 @@ static GtkTreeView *tab_add(struct spthui *spthui, const char *label_text,
 	int n_pages;
 
 	view = spthui_list_new();
+
+	/* This is kind of lazy. Selection gets set when the user
+	 * right-clicks on an item. So in order to display a context
+	 * menu, we hit the _release_ event of a mouse button and
+	 * check it's the right button and so on and so forth.
+	 */
+	g_signal_connect(view, "button-release-event", G_CALLBACK(spthui_popup_maybe), spthui);
 
 	win = gtk_scrolled_window_new(NULL, NULL);
 	gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(view));
