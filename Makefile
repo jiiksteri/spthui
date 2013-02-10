@@ -59,7 +59,7 @@ LDFLAGS += -L$(LIBSPOTIFY_PATH)/lib -Wl,--rpath=$(LIBSPOTIFY_PATH)/lib \
 
 all: spthui
 
-spthui: audio.o item.o popup.o spthui.o
+spthui: audio.o item.o popup.o playback_panel.o spthui.o
 
 clean:
 	$(RM) spthui *.o

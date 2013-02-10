@@ -22,6 +22,7 @@
 #include "search.h"
 #include "popup.h"
 #include "compat_gtk.h"
+#include "playback_panel.h"
 
 #define SPTHUI_SEARCH_CHUNK 20
 
@@ -50,9 +51,7 @@ struct spthui {
 	struct item **tab_items;
 	int n_tab_items;
 
-	GtkLabel *track_info;
-
-	GtkButton *playback_toggle;
+	struct playback_panel *playback_panel;
 	int playing;
 
 	/* What is playing right now */
@@ -429,20 +428,8 @@ static int music_delivery(sp_session *session,
 
 static void ui_update_playing(struct spthui *spthui)
 {
-	const char *stock;
-	const char *name;
-
-	stock = spthui->playing
-		? GTK_STOCK_MEDIA_PAUSE
-		: GTK_STOCK_MEDIA_PLAY;
-
-	name = spthui->current_track != NULL
-		? sp_track_name(spthui->current_track)
-		: "<no current track>";
-
-
-	gtk_label_set_text(spthui->track_info, name);
-	gtk_button_set_label(spthui->playback_toggle, stock);
+	playback_panel_set_info(spthui->playback_panel,
+				spthui->current_track, spthui->playing);
 }
 
 static void start_playback(sp_session *session)
@@ -737,7 +724,7 @@ static int read_app_key(const void **bufp, size_t *sizep)
 /* FIXME: Move the whole function here. Better yet, move
  * it to a separate module
  */
-static void playback_toggle_clicked(GtkButton *button, void *user_data);
+static void playback_toggle_clicked(struct playback_panel *panel, void *user_data);
 
 static void close_selected_tab(GtkButton *btn, void *userdata)
 {
@@ -762,7 +749,7 @@ static void close_selected_tab(GtkButton *btn, void *userdata)
 			 */
 			spthui->current_track = NULL;
 			spthui->current_view = NULL;
-			playback_toggle_clicked(spthui->playback_toggle, spthui);
+			playback_toggle_clicked(spthui->playback_panel, spthui);
 		}
 
 		gtk_notebook_remove_page(spthui->tabs, current);
@@ -910,7 +897,7 @@ static gboolean navigate_current_next(struct spthui *spthui)
 
 }
 
-static void prev_clicked(GtkButton *button, void *user_data)
+static void prev_clicked(struct playback_panel *panel, void *user_data)
 {
 	struct spthui *spthui = user_data;
 	if (navigate_current_prev(spthui)) {
@@ -919,7 +906,7 @@ static void prev_clicked(GtkButton *button, void *user_data)
 	}
 }
 
-static void next_clicked(GtkButton *button, void *user_data)
+static void next_clicked(struct playback_panel *panel, void *user_data)
 {
 	struct spthui *spthui = user_data;
 	if (navigate_current_next(spthui)) {
@@ -928,7 +915,7 @@ static void next_clicked(GtkButton *button, void *user_data)
 
 }
 
-static void playback_toggle_clicked(GtkButton *button, void *user_data)
+static void playback_toggle_clicked(struct playback_panel *panel, void *user_data)
 {
 	struct spthui *spthui = user_data;
 
@@ -938,44 +925,11 @@ static void playback_toggle_clicked(GtkButton *button, void *user_data)
 }
 
 
-
-static GtkWidget *setup_playback_controls(struct spthui *spthui)
-{
-	GtkWidget *box;
-
-	GtkWidget *prev, *next;
-
-	box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-
-	spthui->track_info = GTK_LABEL(gtk_label_new("Not playing"));
-	gtk_misc_set_alignment(GTK_MISC(spthui->track_info), 0.0, 0.5);
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(spthui->track_info),
-			   TRUE, TRUE, 0);
-
-
-
-	/* Bah. GTK_STOCK_MEDIA_* stock item icons are since 2.26.
-	 * Earlier versions just use the mnemonic.
-	 */
-
-	prev = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PREVIOUS);
-	g_signal_connect(prev, "clicked", G_CALLBACK(prev_clicked), spthui);
-
-	next = gtk_button_new_from_stock(GTK_STOCK_MEDIA_NEXT);
-	g_signal_connect(next, "clicked", G_CALLBACK(next_clicked), spthui);
-
-	spthui->playback_toggle = GTK_BUTTON(gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY));
-	g_signal_connect(GTK_WIDGET(spthui->playback_toggle), "clicked",
-			 G_CALLBACK(playback_toggle_clicked), spthui);
-
-
-	gtk_box_pack_start(GTK_BOX(box), prev, FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(spthui->playback_toggle), FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(box), next, FALSE, FALSE, 0);
-
-
-	return box;
-}
+static struct playback_panel_ops playback_panel_ops = {
+	.toggle_playback = playback_toggle_clicked,
+	.next = next_clicked,
+	.prev = prev_clicked,
+};
 
 static GtkWidget *ui_align_right(GtkWidget *widget)
 {
@@ -1178,7 +1132,8 @@ int main(int argc, char **argv)
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(spthui.tabs),
 			   TRUE, TRUE, 0);
 
-	gtk_box_pack_start(GTK_BOX(vbox), setup_playback_controls(&spthui),
+	spthui.playback_panel = playback_panel_init(&playback_panel_ops, &spthui);
+	gtk_box_pack_start(GTK_BOX(vbox), playback_panel_widget(spthui.playback_panel),
 			   FALSE, FALSE, 0);
 
 	spthui.main_window = GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL));
@@ -1206,6 +1161,8 @@ int main(int argc, char **argv)
 		}
 		free(spthui.tab_items);
 	}
+
+	playback_panel_destroy(spthui.playback_panel);
 
 	sp_session_release(spthui.sp_session);
 
