@@ -21,6 +21,7 @@
 #include "item.h"
 #include "search.h"
 #include "popup.h"
+#include "compat_gtk.h"
 
 #define SPTHUI_SEARCH_CHUNK 20
 
@@ -944,7 +945,7 @@ static GtkWidget *setup_playback_controls(struct spthui *spthui)
 
 	GtkWidget *prev, *next;
 
-	box = gtk_hbox_new(FALSE, 0);
+	box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 
 	spthui->track_info = GTK_LABEL(gtk_label_new("Not playing"));
 	gtk_misc_set_alignment(GTK_MISC(spthui->track_info), 0.0, 0.5);
@@ -1007,10 +1008,11 @@ static void setup_login_dialog(struct spthui *spthui)
 	 */
 
 	/* hbox for the label and entry vboxen */
-	hbox = GTK_BOX(gtk_hbox_new(FALSE, 0));
+	hbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
 
 	/* labels */
-	vbox = GTK_BOX(gtk_vbox_new(TRUE, 0));
+	vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
+	gtk_box_set_homogeneous(vbox, TRUE);
 	gtk_box_pack_start(vbox, ui_align_right(gtk_label_new("Username")), FALSE, FALSE, 0);
 	gtk_box_pack_start(vbox, ui_align_right(gtk_label_new("Password")), FALSE, FALSE, 0);
 	gtk_box_pack_start(hbox, GTK_WIDGET(vbox), FALSE, FALSE, 5);
@@ -1018,7 +1020,8 @@ static void setup_login_dialog(struct spthui *spthui)
 
 	/* entries */
 
-	vbox = GTK_BOX(gtk_vbox_new(TRUE, 0));
+	vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
+	gtk_box_set_homogeneous(vbox, TRUE);
 	spthui->username = GTK_ENTRY(gtk_entry_new());
 	gtk_entry_set_activates_default(spthui->username, TRUE);
 	gtk_entry_set_width_chars(spthui->username, 20);
@@ -1165,7 +1168,7 @@ int main(int argc, char **argv)
 	setup_login_dialog(&spthui);
 
 
-	vbox = GTK_BOX(gtk_vbox_new(FALSE, 0));
+	vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
 
 	spthui.query = GTK_ENTRY(gtk_entry_new());
 	g_signal_connect(spthui.query, "activate", G_CALLBACK(init_search), &spthui);
