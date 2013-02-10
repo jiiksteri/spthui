@@ -2,6 +2,8 @@
 #include "playback_panel.h"
 
 #include <stdlib.h>
+#include <string.h>
+
 #include <gtk/gtk.h>
 #include <libspotify/api.h>
 
@@ -13,6 +15,10 @@ struct playback_panel {
 
 	GtkButton *playback_toggle;
 	GtkProgressBar *track_info;
+	sp_track *track;
+	int position;
+
+	unsigned int updater;
 
 	struct playback_panel_ops *ops;
 	void *cb_data;
@@ -44,6 +50,7 @@ struct playback_panel *playback_panel_init(struct playback_panel_ops *ops,
 	GtkWidget *prev, *next;
 
 	panel = malloc(sizeof(*panel));
+	memset(panel, 0, sizeof(*panel));
 
 	panel->ops = ops;
 	panel->cb_data = cb_data;
@@ -88,6 +95,10 @@ struct playback_panel *playback_panel_init(struct playback_panel_ops *ops,
 
 void playback_panel_destroy(struct playback_panel *panel)
 {
+	if (panel->updater > 0) {
+		g_source_remove(panel->updater);
+		panel->updater = 0;
+	}
 	gtk_widget_destroy(panel->box);
 	free(panel);
 }
@@ -95,6 +106,21 @@ void playback_panel_destroy(struct playback_panel *panel)
 GtkWidget *playback_panel_widget(struct playback_panel *panel)
 {
 	return panel->box;
+}
+
+static gboolean update_progress(struct playback_panel *panel)
+{
+	int pos;
+	int max;
+	double frac;
+
+	pos = ++panel->position;
+	max = panel->track ? sp_track_duration(panel->track) / 1000 : 0;
+
+	frac = max > 0 ? (double)pos / (double)max : 0.0;
+	gtk_progress_bar_set_fraction(panel->track_info, frac);
+
+	return TRUE;
 }
 
 void playback_panel_set_info(struct playback_panel *panel,
@@ -105,9 +131,32 @@ void playback_panel_set_info(struct playback_panel *panel,
 
 	stock = playing	? GTK_STOCK_MEDIA_PAUSE	: GTK_STOCK_MEDIA_PLAY;
 
-	name = track != NULL ? sp_track_name(track) : "<no track>";
+	if (track != NULL) {
+		name = sp_track_name(track);
+		if (track != panel->track) {
+			panel->position = 0;
+			panel->track = track;
+			gtk_progress_bar_set_fraction(panel->track_info, 0.0);
+		}
+	} else {
+		panel->position = 0;
+		name = "<no track>";
+	}
 
 	gtk_progress_bar_set_text(panel->track_info, name);
 	gtk_button_set_label(panel->playback_toggle, stock);
+
+	if (playing) {
+		if (panel->updater == 0) {
+			panel->updater = g_timeout_add_seconds(1,
+							       (GSourceFunc)update_progress,
+							       panel);
+		}
+	} else {
+		if (panel->updater > 0) {
+			g_source_remove(panel->updater);
+			panel->updater = 0;
+		}
+	}
 
 }
