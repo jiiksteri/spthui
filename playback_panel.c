@@ -42,12 +42,43 @@ static void playback_toggle_clicked(GtkButton *button, void *user_data)
 	panel->ops->toggle_playback(panel, panel->cb_data);
 }
 
+static gboolean progress_clicked(GtkWidget *widget,
+				 GdkEventButton *event,
+				 void *user_data)
+{
+	GdkWindow *win;
+
+	win = gtk_widget_get_window(widget);
+	fprintf(stderr,
+		"%s(): TODO: Implement seek. (%g,%g) (%g of width)\n",
+		__func__, event->x, event->y,
+		event->x / (gdouble)gdk_window_get_width(win));
+
+	return FALSE;
+}
+
+
+static gboolean progress_clicked_trampoline(GtkWidget *widget,
+					    GdkEventButton *event,
+					    void *user_data)
+{
+	struct playback_panel *panel = user_data;
+
+	/*
+	 * This trampoline callback is dispatched if there's an
+	 * intermediary GtkEventBox. Just redispatch the real
+	 * handler here.
+	 */
+	return progress_clicked(GTK_WIDGET(panel->track_info), event, user_data);
+}
+
 struct playback_panel *playback_panel_init(struct playback_panel_ops *ops,
 					   void *cb_data)
 {
 	struct playback_panel *panel;
 
-	GtkWidget *prev, *next;
+	GtkWidget *prev, *next, *wrapper;
+	GCallback click_cb;
 
 	panel = malloc(sizeof(*panel));
 	memset(panel, 0, sizeof(*panel));
@@ -66,9 +97,27 @@ struct playback_panel *playback_panel_init(struct playback_panel_ops *ops,
 	g_object_set(panel->track_info, "show-text", TRUE, NULL);
 	gtk_progress_bar_set_text(panel->track_info, "Not playing");
 
-	gtk_box_pack_start(GTK_BOX(panel->box), GTK_WIDGET(panel->track_info),
-			   TRUE, TRUE, 0);
+	if (gtk_widget_get_has_window(GTK_WIDGET(panel->track_info))) {
+		/* progress bar has a backing window. This is the
+		 * case with gtk2.  No need for a wrapping GtkEventBox
+		 */
+		wrapper = GTK_WIDGET(panel->track_info);
+		click_cb = G_CALLBACK(progress_clicked);
+	} else {
+		/* Need a proper wrapper */
+		wrapper = gtk_event_box_new();
+		gtk_container_add(GTK_CONTAINER(wrapper), GTK_WIDGET(panel->track_info));
+		click_cb = G_CALLBACK(progress_clicked_trampoline);
+	}
 
+	g_signal_connect(wrapper, "button-press-event",
+			 click_cb, panel);
+
+	g_signal_connect(wrapper, "realize",
+			 G_CALLBACK(gtk_widget_add_events),
+			 (void *)GDK_BUTTON_PRESS_MASK);
+
+	gtk_box_pack_start(GTK_BOX(panel->box), wrapper, TRUE, TRUE, 0);
 
 
 	/* Bah. GTK_STOCK_MEDIA_* stock item icons are since 2.26.
