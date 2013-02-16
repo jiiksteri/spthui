@@ -17,6 +17,10 @@ struct login_dialog {
 
 	GtkEntry *username;
 	GtkEntry *password;
+
+	char *error_str;
+	GtkLabel *error_label;
+	PangoAttrList *error_attrs;
 };
 
 
@@ -67,6 +71,8 @@ struct login_dialog *login_dialog_init(sp_session *sp_session,
 	dlg->sp_session = sp_session;
 	dlg->delete_cb = delete_cb;
 	dlg->cb_data = cb_data;
+	dlg->error_attrs = pango_attr_list_new();
+	pango_attr_list_insert(dlg->error_attrs, pango_attr_foreground_new(65535, 0, 0));
 
 	dlg->login_dialog = GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL));
 	g_object_ref_sink(dlg->login_dialog);
@@ -123,7 +129,15 @@ struct login_dialog *login_dialog_init(sp_session *sp_session,
 	gtk_container_add(GTK_CONTAINER(alignment), login_btn);
 	gtk_box_pack_start(hbox, alignment, FALSE, FALSE, 10);
 
-	gtk_container_add(GTK_CONTAINER(dlg->login_dialog), GTK_WIDGET(hbox));
+	vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
+	gtk_box_pack_start(vbox, GTK_WIDGET(hbox), TRUE, TRUE, 5);
+
+	dlg->error_label = GTK_LABEL(gtk_label_new(NULL));
+	gtk_label_set_attributes(dlg->error_label, dlg->error_attrs);
+	gtk_box_pack_start(vbox, GTK_WIDGET(dlg->error_label),
+			   TRUE, TRUE, 5);
+
+	gtk_container_add(GTK_CONTAINER(dlg->login_dialog), GTK_WIDGET(vbox));
 	gtk_window_set_position(dlg->login_dialog, GTK_WIN_POS_CENTER);
 
 	gtk_widget_set_can_default(login_btn, TRUE);
@@ -134,6 +148,8 @@ struct login_dialog *login_dialog_init(sp_session *sp_session,
 
 void login_dialog_destroy(struct login_dialog *dlg)
 {
+	pango_attr_list_unref(dlg->error_attrs);
+	free(dlg->error_str);
 	g_object_unref(dlg->login_dialog);
 	free(dlg);
 }
@@ -152,6 +168,12 @@ void login_dialog_hide(struct login_dialog *dlg)
 void login_dialog_error(struct login_dialog *dlg,
 			const char *msg)
 {
-	fprintf(stderr, "%s(): FIXME: show label: %s\n",
-		__func__, msg);
+	char *old = dlg->error_str;
+
+	dlg->error_str = msg != NULL
+		? strdup(msg)
+		: NULL;
+
+	gtk_label_set_text(dlg->error_label, dlg->error_str);
+	free(old);
 }
