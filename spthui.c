@@ -203,12 +203,12 @@ static sp_error process_events(sp_session *session, struct timespec *timeout)
 sp_error spin_logout(struct sp_session *session)
 {
 	sp_error err;
-	int millis;
+	struct timespec timeout;
 
 	fprintf(stderr, "%s()\n", __func__);
 	err = sp_session_logout(session);
 	while (sp_session_connectionstate(session) == SP_CONNECTION_STATE_LOGGED_IN) {
-		err = sp_session_process_events(session, &millis);
+		err = process_events(session, &timeout);
 	}
 
 	return err;
