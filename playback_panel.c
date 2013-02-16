@@ -166,6 +166,12 @@ static gboolean update_progress(struct playback_panel *panel)
 	pos = ++panel->position;
 	max = panel->track ? sp_track_duration(panel->track) / 1000 : 0;
 
+	if (pos >= max) {
+		/* Accidents happen. Cap it at max and avoid
+		 * a nasty gtk warning. */
+		pos = max;
+	}
+
 	frac = max > 0 ? (double)pos / (double)max : 0.0;
 	gtk_progress_bar_set_fraction(panel->track_info, frac);
 
