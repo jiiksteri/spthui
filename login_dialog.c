@@ -23,6 +23,11 @@ struct login_dialog {
 	PangoAttrList *error_attrs;
 };
 
+static gboolean clear_error(GtkWidget *widget, GdkEvent *event, void *user_data)
+{
+	login_dialog_error(user_data, NULL);
+	return FALSE;
+}
 
 static gboolean deleted(GtkWidget *widget, GdkEvent *event, void *user_data)
 {
@@ -36,6 +41,8 @@ static gboolean deleted(GtkWidget *widget, GdkEvent *event, void *user_data)
 static void login_clicked(GtkButton *btn, void *data)
 {
 	struct login_dialog *dlg = data;
+
+	login_dialog_error(dlg, NULL);
 
 	if (gtk_entry_get_text_length(dlg->username) > 0 &&
 	    gtk_entry_get_text_length(dlg->password) > 0) {
@@ -106,11 +113,15 @@ struct login_dialog *login_dialog_init(sp_session *sp_session,
 	vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
 	gtk_box_set_homogeneous(vbox, TRUE);
 	dlg->username = GTK_ENTRY(gtk_entry_new());
+	g_signal_connect(GTK_WIDGET(dlg->username), "focus-in-event",
+			 G_CALLBACK(clear_error), dlg);
 	gtk_entry_set_activates_default(dlg->username, TRUE);
 	gtk_entry_set_width_chars(dlg->username, 20);
 	gtk_box_pack_start(vbox, GTK_WIDGET(dlg->username), TRUE, TRUE, 5);
 
 	dlg->password = GTK_ENTRY(gtk_entry_new()); /* password entry */
+	g_signal_connect(GTK_WIDGET(dlg->password), "focus-in-event",
+			 G_CALLBACK(clear_error), dlg);
 	gtk_entry_set_activates_default(dlg->password, TRUE);
 	gtk_entry_set_visibility(dlg->password, FALSE);
 	gtk_entry_set_width_chars(dlg->password, 20);
