@@ -464,9 +464,8 @@ static void end_of_track(sp_session *session)
 		"%s(): stopping playback. FIXME: go to next track\n",
 		__func__);
 
-	audio_stop_playback(spthui->audio);
+	sp_session_player_play(session, 0);
 	ui_update_playing(spthui);
-	sp_session_player_unload(session);
 }
 
 static sp_session_callbacks cb = {
