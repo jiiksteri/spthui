@@ -831,13 +831,13 @@ static GtkTreePath *tree_model_get_path_last(GtkTreeModel *model)
 		: NULL;
 }
 
-static gboolean navigate_current_prev(struct spthui *spthui)
+static gboolean navigate_view_prev(GtkTreeView *view)
 {
 	GtkTreeModel *model;
 	GtkTreePath *path;
 	GtkTreeSelection *selection;
 
-	path = view_get_current_path(spthui->current_view, &model, &selection);
+	path = view_get_current_path(view, &model, &selection);
 	if (path != NULL) {
 		if (!gtk_tree_path_prev(path)) {
 			gtk_tree_path_free(path);
@@ -853,14 +853,14 @@ static gboolean navigate_current_prev(struct spthui *spthui)
 	return path != NULL;
 }
 
-static gboolean navigate_current_next(struct spthui *spthui)
+static gboolean navigate_view_next(GtkTreeView *view)
 {
 	GtkTreeIter iter;
 	GtkTreeModel *model;
 	GtkTreePath *path;
 	GtkTreeSelection *selection;
 
-	path = view_get_current_path(spthui->current_view, &model, &selection);
+	path = view_get_current_path(view, &model, &selection);
 	if (path != NULL) {
 		gtk_tree_path_next(path);
 		if (!gtk_tree_model_get_iter(model, &iter, path) &&
@@ -884,17 +884,21 @@ static gboolean navigate_current_next(struct spthui *spthui)
 static void prev_clicked(struct playback_panel *panel, void *user_data)
 {
 	struct spthui *spthui = user_data;
-	if (navigate_current_prev(spthui)) {
+	if (navigate_view_prev(spthui->current_view)) {
 		play_current(spthui);
 		ui_update_playing(spthui);
+	} else {
+		navigate_view_prev(spthui->selected_view);
 	}
 }
 
 static void next_clicked(struct playback_panel *panel, void *user_data)
 {
 	struct spthui *spthui = user_data;
-	if (navigate_current_next(spthui)) {
+	if (navigate_view_next(spthui->current_view)) {
 		play_current(spthui);
+	} else {
+		navigate_view_next(spthui->selected_view);
 	}
 
 }
