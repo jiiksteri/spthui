@@ -23,6 +23,7 @@
 #include "popup.h"
 #include "compat_gtk.h"
 #include "playback_panel.h"
+#include "login_dialog.h"
 
 #define SPTHUI_SEARCH_CHUNK 20
 
@@ -38,9 +39,7 @@ struct spthui {
 	enum spthui_state state;
 
 
-	GtkWindow *login_dialog;
-	GtkEntry *username;
-	GtkEntry *password;
+	struct login_dialog *login_dialog;
 	int try_login;
 
 	GtkWindow *main_window;
@@ -375,7 +374,7 @@ static void logged_in(sp_session *session, sp_error error)
 
 		gdk_threads_enter();
 
-		gtk_widget_hide(GTK_WIDGET(spthui->login_dialog));
+		login_dialog_hide(spthui->login_dialog);
 		gtk_widget_show_all(GTK_WIDGET(spthui->main_window));
 		gdk_threads_leave();
 
@@ -496,22 +495,6 @@ static sp_error join_worker(struct spthui *spthui)
 		fprintf(stderr, "%s(): %s\n", __func__, strerror(join_err));
 	}
 	return err;
-}
-
-static void login_clicked(GtkButton *btn, void *data)
-{
-	struct spthui *spthui = data;
-
-	if (gtk_entry_get_text_length(spthui->username) > 0 &&
-	    gtk_entry_get_text_length(spthui->password) > 0) {
-		fprintf(stderr, "%s(): trying to log in as %s\n",
-			__func__, gtk_entry_get_text(spthui->username));
-
-		sp_session_login(spthui->sp_session,
-				 gtk_entry_get_text(spthui->username),
-				 gtk_entry_get_text(spthui->password),
-				 0, (const char *)NULL);
-	}
 }
 
 static void add_track(GtkListStore *store, sp_track *track)
@@ -798,22 +781,14 @@ static void setup_tabs(struct spthui *spthui)
 
 }
 
-static gboolean spthui_exit(GtkWidget *widget, GdkEvent *event, void *user_data)
+static void spthui_exit(void *user_data)
 {
-	struct spthui *spthui = user_data;
-
-	if (widget == GTK_WIDGET(spthui->main_window)) {
-		g_object_unref(spthui->main_window);
-		spthui->main_window = NULL;
-	}
-
-	if (widget == GTK_WIDGET(spthui->login_dialog)) {
-		g_object_unref(spthui->login_dialog);
-		spthui->login_dialog = NULL;
-	}
-
 	gtk_main_quit();
+}
 
+static gboolean spthui_exit_gtk(GtkWidget *widget, GdkEvent *event, gpointer user_data)
+{
+	spthui_exit(user_data);
 	return FALSE;
 }
 
@@ -939,82 +914,6 @@ static struct playback_panel_ops playback_panel_ops = {
 	.prev = prev_clicked,
 };
 
-static GtkWidget *ui_align_right(GtkWidget *widget)
-{
-	GtkWidget *align;
-
-	align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
-	gtk_container_add(GTK_CONTAINER(align), widget);
-	return align;
-}
-
-static void setup_login_dialog(struct spthui *spthui)
-{
-	GtkBox *hbox, *vbox;
-	GtkWidget *login_btn;
-	GtkWidget *alignment;
-
-	spthui->login_dialog = GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL));
-	g_object_ref_sink(spthui->login_dialog);
-
-	g_signal_connect(spthui->login_dialog, "delete-event", G_CALLBACK(spthui_exit), spthui);
-	gtk_window_set_title(spthui->login_dialog, "Log in");
-
-	/*
-	 *   hbox - - - - - - - - - - - - - - - - - - - - - - -
-	 *   | |-vbox--------|-vbox------------------          |
-	 *     |  user label |  [ username entry ]  |
-	 *   | |  pw label   |  [ password entry ]  | [login]  |
-	 *     |-------------|-----------------------
-	 *   |- - - - - - - - - - - - - - - - - - - - - - - - -|
-	 */
-
-	/* hbox for the label and entry vboxen */
-	hbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
-
-	/* labels */
-	vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
-	gtk_box_set_homogeneous(vbox, TRUE);
-	gtk_box_pack_start(vbox, ui_align_right(gtk_label_new("Username")), FALSE, FALSE, 0);
-	gtk_box_pack_start(vbox, ui_align_right(gtk_label_new("Password")), FALSE, FALSE, 0);
-	gtk_box_pack_start(hbox, GTK_WIDGET(vbox), FALSE, FALSE, 5);
-
-
-	/* entries */
-
-	vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
-	gtk_box_set_homogeneous(vbox, TRUE);
-	spthui->username = GTK_ENTRY(gtk_entry_new());
-	gtk_entry_set_activates_default(spthui->username, TRUE);
-	gtk_entry_set_width_chars(spthui->username, 20);
-	gtk_box_pack_start(vbox, GTK_WIDGET(spthui->username), TRUE, TRUE, 5);
-
-	spthui->password = GTK_ENTRY(gtk_entry_new()); /* password entry */
-	gtk_entry_set_activates_default(spthui->password, TRUE);
-	gtk_entry_set_visibility(spthui->password, FALSE);
-	gtk_entry_set_width_chars(spthui->password, 20);
-	gtk_box_pack_start(vbox, GTK_WIDGET(spthui->password), TRUE, TRUE, 5);
-
-	gtk_box_pack_start(hbox, GTK_WIDGET(vbox), FALSE, FALSE, 5);
-
-
-	/* login button */
-
-	login_btn = gtk_button_new_with_label("Log in");
-	g_signal_connect(login_btn, "clicked", G_CALLBACK(login_clicked), spthui);
-
-	alignment = gtk_alignment_new(1.0, 1.0, 0.0, 0.0);
-	gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), 0, 5, 0, 0);
-	gtk_container_add(GTK_CONTAINER(alignment), login_btn);
-	gtk_box_pack_start(hbox, alignment, FALSE, FALSE, 10);
-
-	gtk_container_add(GTK_CONTAINER(spthui->login_dialog), GTK_WIDGET(hbox));
-	gtk_window_set_position(spthui->login_dialog, GTK_WIN_POS_CENTER);
-
-	gtk_widget_set_can_default(login_btn, TRUE);
-	gtk_widget_grab_default(login_btn);
-}
-
 static void search_complete(sp_search *sp_search, void *userdata)
 {
 	struct item *item = userdata;
@@ -1132,8 +1031,9 @@ int main(int argc, char **argv)
 	pthread_create(&spthui.spotify_worker, (pthread_attr_t *)NULL,
 		       spotify_worker, &spthui);
 
-	setup_login_dialog(&spthui);
-
+	spthui.login_dialog = login_dialog_init(spthui.sp_session,
+						spthui_exit,
+						&spthui);
 
 	vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
 
@@ -1152,12 +1052,14 @@ int main(int argc, char **argv)
 	spthui.main_window = GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL));
 	g_object_ref_sink(spthui.main_window);
 
-	g_signal_connect(spthui.main_window, "delete-event", G_CALLBACK(spthui_exit), &spthui);
+	g_signal_connect(spthui.main_window, "delete-event",
+			 G_CALLBACK(spthui_exit_gtk), &spthui);
+
 	gtk_window_set_title(spthui.main_window, "spthui");
 	gtk_container_add(GTK_CONTAINER(spthui.main_window), GTK_WIDGET(vbox));
 	gtk_window_set_default_size(spthui.main_window, 666, 400);
 
-	gtk_widget_show_all(GTK_WIDGET(spthui.login_dialog));
+	login_dialog_show(spthui.login_dialog);
 
 	gdk_threads_enter();
 	gtk_main();
@@ -1176,6 +1078,8 @@ int main(int argc, char **argv)
 	}
 
 	playback_panel_destroy(spthui.playback_panel);
+	login_dialog_destroy(spthui.login_dialog);
+	g_object_unref(spthui.main_window);
 
 	sp_session_release(spthui.sp_session);
 
