@@ -148,3 +148,10 @@ void login_dialog_hide(struct login_dialog *dlg)
 {
 	gtk_widget_hide(GTK_WIDGET(dlg->login_dialog));
 }
+
+void login_dialog_error(struct login_dialog *dlg,
+			const char *msg)
+{
+	fprintf(stderr, "%s(): FIXME: show label: %s\n",
+		__func__, msg);
+}

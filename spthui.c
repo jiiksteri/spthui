@@ -370,16 +370,21 @@ static void logged_in(sp_session *session, sp_error error)
 
 	fprintf(stderr, "%s(): %p %d\n", __func__, session, error);
 
+	gdk_threads_enter();
+
 	if (error == SP_ERROR_OK) {
 
-		gdk_threads_enter();
 
 		login_dialog_hide(spthui->login_dialog);
 		gtk_widget_show_all(GTK_WIDGET(spthui->main_window));
-		gdk_threads_leave();
 
 		add_playlists(spthui, session);
+	} else {
+		login_dialog_error(spthui->login_dialog,
+				   sp_error_message(error));
 	}
+
+	gdk_threads_leave();
 
 }
 

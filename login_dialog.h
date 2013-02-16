@@ -12,3 +12,6 @@ void login_dialog_destroy(struct login_dialog *dlg);
 
 void login_dialog_show(struct login_dialog *dlg);
 void login_dialog_hide(struct login_dialog *dlg);
+
+void login_dialog_error(struct login_dialog *dlg,
+			const char *msg);
