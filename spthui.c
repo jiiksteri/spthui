@@ -457,16 +457,25 @@ static void get_audio_buffer_stats(sp_session *session, sp_audio_buffer_stats *s
 
 }
 
+/* FIXME: Move play_current() and dependencies here to avoid
+ * this local prototype. We only provide the prototype so the
+ * diff is smaller.
+ */
+static void play_current(struct spthui *spthui);
+
 static void end_of_track(sp_session *session)
 {
 	struct spthui *spthui = sp_session_userdata(session);
 
-	fprintf(stderr,
-		"%s(): stopping playback. FIXME: go to next track\n",
-		__func__);
+	gdk_threads_enter();
+	if (view_navigate_next(spthui->current_view)) {
+		play_current(spthui);
+	} else {
+		sp_session_player_play(session, 0);
+	}
 
-	sp_session_player_play(session, 0);
 	ui_update_playing(spthui);
+	gdk_threads_leave();
 }
 
 static sp_session_callbacks cb = {
