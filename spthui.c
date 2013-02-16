@@ -187,28 +187,28 @@ static GtkTreeView *tab_get(GtkNotebook *tabs, int ind)
 	return tab;
 }
 
-static sp_error process_events(sp_session *session, struct timespec *timeout)
+static sp_error process_events(struct spthui *spthui, struct timespec *timeout)
 {
 	struct timeval tv;
 	sp_error err;
 	int millis;
 
-	err = sp_session_process_events(session, &millis);
+	err = sp_session_process_events(spthui->sp_session, &millis);
 	gettimeofday(&tv, NULL);
 	timeout->tv_sec = tv.tv_sec + millis / 1000;
 	timeout->tv_nsec = tv.tv_usec * 1000 + millis % 1000 * 1000;
 	return err;
 }
 
-sp_error spin_logout(struct sp_session *session)
+sp_error spin_logout(struct spthui *spthui)
 {
 	sp_error err;
 	struct timespec timeout;
 
 	fprintf(stderr, "%s()\n", __func__);
-	err = sp_session_logout(session);
-	while (sp_session_connectionstate(session) == SP_CONNECTION_STATE_LOGGED_IN) {
-		err = process_events(session, &timeout);
+	err = sp_session_logout(spthui->sp_session);
+	while (sp_session_connectionstate(spthui->sp_session) == SP_CONNECTION_STATE_LOGGED_IN) {
+		err = process_events(spthui, &timeout);
 	}
 
 	return err;
@@ -221,7 +221,7 @@ static void *spotify_worker(void *arg)
 	struct spthui *spthui = arg;
 	sp_error err;
 
-	while ((err = process_events(spthui->sp_session, &timeout)) == SP_ERROR_OK) {
+	while ((err = process_events(spthui, &timeout)) == SP_ERROR_OK) {
 		pthread_mutex_lock(&spthui->lock);
 		if (spthui->state == STATE_DYING) {
 			pthread_mutex_unlock(&spthui->lock);
@@ -236,7 +236,7 @@ static void *spotify_worker(void *arg)
 		fprintf(stderr, "%s(): failed to stop playback: %s\n",
 			__func__, sp_error_message(err));
 	}
-	err = spin_logout(spthui->sp_session);
+	err = spin_logout(spthui);
 	fprintf(stderr, "%s(): exiting (%d)\n", __func__, err);
 	return (void *)err;
 }
