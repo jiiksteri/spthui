@@ -822,6 +822,10 @@ static GtkTreePath *view_get_current_path(GtkTreeView *view,
 {
 	GtkTreeIter iter;
 
+	if (view == NULL) {
+		return NULL;
+	}
+
 	*selection = gtk_tree_view_get_selection(view);
 	return gtk_tree_selection_get_selected(*selection, model, &iter)
 		? gtk_tree_model_get_path(*model, &iter)
@@ -918,6 +922,10 @@ static void next_clicked(struct playback_panel *panel, void *user_data)
 static void playback_toggle_clicked(struct playback_panel *panel, void *user_data)
 {
 	struct spthui *spthui = user_data;
+
+	if (spthui->current_track == NULL) {
+		return;
+	}
 
 	sp_session_player_play(spthui->sp_session, !spthui->playing);
 	spthui->playing = !spthui->playing;
