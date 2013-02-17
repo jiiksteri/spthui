@@ -66,6 +66,7 @@ struct spthui {
 	pthread_cond_t cond;
 
 	pthread_t spotify_worker;
+	int notified;
 
 	struct audio *audio;
 };
@@ -193,7 +194,9 @@ static sp_error process_events(struct spthui *spthui, struct timespec *timeout)
 	sp_error err;
 	int millis;
 
+	pthread_mutex_lock(&spthui->lock);
 	err = sp_session_process_events(spthui->sp_session, &millis);
+	pthread_mutex_unlock(&spthui->lock);
 	gettimeofday(&tv, NULL);
 	timeout->tv_sec = tv.tv_sec + millis / 1000;
 	timeout->tv_nsec = tv.tv_usec * 1000 + millis % 1000 * 1000;
@@ -222,6 +225,12 @@ static void *spotify_worker(void *arg)
 	sp_error err;
 
 	while ((err = process_events(spthui, &timeout)) == SP_ERROR_OK) {
+
+		if (spthui->notified != 0) {
+			spthui->notified = 0;
+			continue;
+		}
+
 		pthread_mutex_lock(&spthui->lock);
 		if (spthui->state == STATE_DYING) {
 			pthread_mutex_unlock(&spthui->lock);
@@ -272,7 +281,8 @@ static gboolean pl_find_foreach(GtkTreeModel *model,
 }
 
 
-static void add_pl_or_name(GtkTreeView *list, sp_playlist *pl)
+static void add_pl_or_name(GtkTreeView *list, sp_playlist *pl,
+			   const char *name)
 {
 	GtkListStore *store;
 	struct pl_find_ctx ctx = {
@@ -295,7 +305,7 @@ static void add_pl_or_name(GtkTreeView *list, sp_playlist *pl)
 
 	gtk_list_store_set(store, &ctx.iter,
 			   0, ctx.found,
-			   1, sp_playlist_name(pl),
+			   1, name,
 			   -1);
 }
 
@@ -304,9 +314,14 @@ static void pl_fill_name(sp_playlist *pl, void *userdata)
 	struct spthui *spthui = userdata;
 
 	if (sp_playlist_is_loaded(pl)) {
+		char *name = strdup(sp_playlist_name(pl));
+		pthread_mutex_unlock(&spthui->lock);
 		gdk_threads_enter();
-		add_pl_or_name(tab_get(spthui->tabs, 0), pl);
+		add_pl_or_name(tab_get(spthui->tabs, 0), pl, name);
 		gdk_threads_leave();
+		free(name);
+		pthread_mutex_lock(&spthui->lock);
+
 	}
 }
 
@@ -330,8 +345,9 @@ static void do_add_playlists(sp_playlistcontainer *playlists, void *userdata)
 
 	n = sp_playlistcontainer_num_playlists(playlists);
 	fprintf(stderr, "%s(): %d playlists\n", __func__, n);
-	gdk_threads_enter();
-	gtk_list_store_clear(GTK_LIST_STORE(gtk_tree_view_get_model(tab_get(spthui->tabs, 0))));
+
+	sp_playlistcontainer_add_ref(playlists);
+
 	for (i = 0; i < n; i++) {
 		pl = sp_playlistcontainer_playlist(playlists, i);
 		/* FIXME: We don't unref this anywhere.
@@ -343,7 +359,19 @@ static void do_add_playlists(sp_playlistcontainer *playlists, void *userdata)
 		sp_playlist_add_ref(pl);
 		sp_playlist_add_callbacks(pl, &pl_callbacks, spthui);
 	}
+
+	/* For clearing the list we need to swap
+	 * spthui->lock for the gtk one.
+	 * Grab it back right after, as we're called from
+	 * process_events() which expects the lock held.
+	 */
+	pthread_mutex_unlock(&spthui->lock);
+
+	gdk_threads_enter();
+	gtk_list_store_clear(GTK_LIST_STORE(gtk_tree_view_get_model(tab_get(spthui->tabs, 0))));
 	gdk_threads_leave();
+
+	pthread_mutex_lock(&spthui->lock);
 }
 
 static sp_playlistcontainer_callbacks root_pl_container_cb = {
@@ -363,24 +391,32 @@ static void add_playlists(struct spthui *spthui, sp_session *session)
 static void logged_in(sp_session *session, sp_error error)
 {
 	struct spthui *spthui = sp_session_userdata(session);
+	const char *error_msg;
 
 	fprintf(stderr, "%s(): %p %d\n", __func__, session, error);
+	if (error == SP_ERROR_OK) {
+		add_playlists(spthui, session);
+	} else {
+		error_msg = sp_error_message(error);
+	}
 
+	/* With the spotify stuff done, swap the lock for
+	 * the gtk one. */
+	pthread_mutex_unlock(&spthui->lock);
 	gdk_threads_enter();
 
 	if (error == SP_ERROR_OK) {
-
-
 		login_dialog_hide(spthui->login_dialog);
 		gtk_widget_show_all(GTK_WIDGET(spthui->main_window));
-
-		add_playlists(spthui, session);
 	} else {
-		login_dialog_error(spthui->login_dialog,
-				   sp_error_message(error));
+		login_dialog_error(spthui->login_dialog, error_msg);
 	}
 
 	gdk_threads_leave();
+
+	/* we're called by process_events() which expects
+	 * spthui->lock held */
+	pthread_mutex_lock(&spthui->lock);
 
 }
 
@@ -393,9 +429,39 @@ static void notify_main_thread(sp_session *session)
 {
 	struct spthui *spthui = sp_session_userdata(session);
 
-	pthread_mutex_lock(&spthui->lock);
-	pthread_cond_broadcast(&spthui->cond);
-	pthread_mutex_unlock(&spthui->lock);
+	/* According to libspotify docs, ->notify_main_thread() may
+	 * be called from the sp_process_events() thread too (and this
+	 * indeed happens). So only kick the sp_process_events() thread
+	 * if we're not it...
+	 *
+	 * ...but that's not enough. One might naively expect we can
+	 * just check if we're the sp_process_events() thread and do
+	 * proper pthread cond notification if not so. Alas, that too
+	 * leads into occasional deadlocks between process_events()
+	 * and libspotify internal threads. The FAQ ever-so-subtly
+	 * states this too:
+	 *
+	 *     "if you plan to take a lock it must not already be
+	 *      held when calling sp_session_process_events()"
+	 *
+	 * So the safe bet is, just _try_ to lock it and if it fails
+	 * set the ->notified flag for when ->spotify_worker finally
+	 * exits sp_process_event(). It will then skip waiting and
+	 * call sp_process_events() again immediately. We're not
+	 * fussing over atomics here.
+	 *
+	 * FIXME: we should wrap pthread_mutex_{lock,unlock}() on
+	 * spthui->lock into something that checks ->notified on
+	 * *_unlock() and wakes the main thread up at that point
+	 * if set.
+	 */
+	if (!pthread_equal(pthread_self(), spthui->spotify_worker) &&
+	    pthread_mutex_trylock(&spthui->lock) != EBUSY) {
+		pthread_cond_broadcast(&spthui->cond);
+		pthread_mutex_unlock(&spthui->lock);
+	} else {
+		spthui->notified = 1;
+	}
 }
 
 static void log_message(sp_session *session, const char *message)
