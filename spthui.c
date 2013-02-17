@@ -371,19 +371,6 @@ static void do_add_playlists(sp_playlistcontainer *playlists, void *userdata)
 		sp_playlist_add_ref(pl);
 		sp_playlist_add_callbacks(pl, &pl_callbacks, spthui);
 	}
-
-	/* For clearing the list we need to swap
-	 * spthui->lock for the gtk one.
-	 * Grab it back right after, as we're called from
-	 * process_events() which expects the lock held.
-	 */
-	spthui_unlock(spthui);
-
-	gdk_threads_enter();
-	gtk_list_store_clear(GTK_LIST_STORE(gtk_tree_view_get_model(tab_get(spthui->tabs, 0))));
-	gdk_threads_leave();
-
-	spthui_lock(spthui);
 }
 
 static sp_playlistcontainer_callbacks root_pl_container_cb = {
