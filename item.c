@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include "search.h"
+#include "albumbrowse.h"
 
 struct item {
 	enum item_type type;
@@ -46,12 +47,38 @@ struct item *item_init_search(struct search *search)
 	return item_init(ITEM_SEARCH, search);
 }
 
+struct item *item_init_artist(sp_artist *artist)
+{
+	sp_artist_add_ref(artist);
+	return item_init(ITEM_ARTIST, artist);
+}
+
+struct item *item_init_album(sp_album *album)
+{
+	sp_album_add_ref(album);
+	return item_init(ITEM_ALBUM, album);
+}
+
+struct item *item_init_albumbrowse(struct albumbrowse *browse, const char *name)
+{
+	sp_albumbrowse_add_ref(browse->browse);
+	/* cannot use sp_album_name(sp_albumbrowse_album()),
+	 * as it's probably not loaded yet. */
+	return item_init(ITEM_ALBUMBROWSE, browse);
+}
+
 /* Once this gets a proper module, move this there.
  */
 static void search_free(struct search *search)
 {
 	sp_search_release(search->search);
 	free(search->name);
+}
+
+/* same here. */
+static void albumbrowse_free(struct albumbrowse *browse)
+{
+	sp_albumbrowse_release(browse->browse);
 }
 
 void item_free(struct item *item)
@@ -68,6 +95,15 @@ void item_free(struct item *item)
 		break;
 	case ITEM_SEARCH:
 		search_free(item->item);
+		break;
+	case ITEM_ARTIST:
+		sp_artist_release(item->item);
+		break;
+	case ITEM_ALBUM:
+		sp_album_release(item->item);
+		break;
+	case ITEM_ALBUMBROWSE:
+		albumbrowse_free(item->item);
 		break;
 	}
 
@@ -95,5 +131,17 @@ sp_playlist *item_playlist(struct item *item)
 struct search *item_search(struct item *item)
 {
 	assert(item->type == ITEM_SEARCH);
+	return item->item;
+}
+
+sp_artist *item_artist(struct item *item)
+{
+	assert(item->type == ITEM_ARTIST);
+	return item->item;
+}
+
+sp_album *item_album(struct item *item)
+{
+	assert(item->type == ITEM_ALBUM);
 	return item->item;
 }

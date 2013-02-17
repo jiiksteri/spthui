@@ -28,6 +28,9 @@ void popup_show(struct item *item, const char *name,
 	case ITEM_NONE:
 	case ITEM_PLAYLIST:
 	case ITEM_SEARCH:
+	case ITEM_ARTIST:
+	case ITEM_ALBUM:
+	case ITEM_ALBUMBROWSE:
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
 				      gtk_menu_item_new_with_label("I am out of options."
 								   " Why are we here?"));
