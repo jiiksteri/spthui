@@ -25,11 +25,13 @@ static struct item *item_init(enum item_type type, void *p)
 
 struct item *item_init_playlist(sp_playlist *pl)
 {
+	sp_playlist_add_ref(pl);
 	return item_init(ITEM_PLAYLIST, pl);
 }
 
 struct item *item_init_track(sp_track *track)
 {
+	sp_track_add_ref(track);
 	return item_init(ITEM_TRACK, track);
 }
 
@@ -40,6 +42,7 @@ struct item *item_init_none(void)
 
 struct item *item_init_search(struct search *search)
 {
+	sp_search_add_ref(search->search);
 	return item_init(ITEM_SEARCH, search);
 }
 

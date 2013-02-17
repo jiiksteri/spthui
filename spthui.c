@@ -358,17 +358,13 @@ static void do_add_playlists(sp_playlistcontainer *playlists, void *userdata)
 	n = sp_playlistcontainer_num_playlists(playlists);
 	fprintf(stderr, "%s(): %d playlists\n", __func__, n);
 
+	/* FIXME: Is this needed? We eventually *_add_ref() the
+	 * contained playlists, via item_parse(). We don't
+	 * do much with the container.. */
 	sp_playlistcontainer_add_ref(playlists);
 
 	for (i = 0; i < n; i++) {
 		pl = sp_playlistcontainer_playlist(playlists, i);
-		/* FIXME: We don't unref this anywhere.
-		 * We _add_ref() the playlist when we expand it,
-		 * so we can do item_free() on its containing
-		 * struct item. But we don't free the root
-		 * playlist container now...
-		 */
-		sp_playlist_add_ref(pl);
 		sp_playlist_add_callbacks(pl, &pl_callbacks, spthui);
 	}
 }
@@ -708,7 +704,6 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 		setup_selection_tracker(view, spthui);
 		g_signal_connect(view, "row-activated",
 				 G_CALLBACK(list_item_activated), spthui);
-		sp_playlist_add_ref(item_playlist(item));
 		playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)),
 				     item_playlist(item));
 		break;
