@@ -10,8 +10,7 @@
 struct login_dialog {
 	GtkWindow *login_dialog;
 
-	sp_session *sp_session;
-
+	login_dialog_login_cb login_cb;
 	login_dialog_delete_cb delete_cb;
 	void *cb_data;
 
@@ -48,11 +47,9 @@ static void login_clicked(GtkButton *btn, void *data)
 	    gtk_entry_get_text_length(dlg->password) > 0) {
 		fprintf(stderr, "%s(): trying to log in as %s\n",
 			__func__, gtk_entry_get_text(dlg->username));
-
-		sp_session_login(dlg->sp_session,
-				 gtk_entry_get_text(dlg->username),
-				 gtk_entry_get_text(dlg->password),
-				 0, (const char *)NULL);
+		dlg->login_cb(gtk_entry_get_text(dlg->username),
+			      gtk_entry_get_text(dlg->password),
+			      dlg->cb_data);
 	}
 }
 
@@ -65,7 +62,7 @@ static GtkWidget *ui_align_right(GtkWidget *widget)
 	return align;
 }
 
-struct login_dialog *login_dialog_init(sp_session *sp_session,
+struct login_dialog *login_dialog_init(login_dialog_login_cb login_cb,
 				       login_dialog_delete_cb delete_cb, void *cb_data)
 {
 	GtkBox *hbox, *vbox;
@@ -75,7 +72,7 @@ struct login_dialog *login_dialog_init(sp_session *sp_session,
 
 	dlg = malloc(sizeof(*dlg));
 	memset(dlg, 0, sizeof(*dlg));
-	dlg->sp_session = sp_session;
+	dlg->login_cb = login_cb;
 	dlg->delete_cb = delete_cb;
 	dlg->cb_data = cb_data;
 	dlg->error_attrs = pango_attr_list_new();

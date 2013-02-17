@@ -909,6 +909,21 @@ static void init_search(GtkEntry *query, void *user_data)
 
 }
 
+static void try_login_cb(const char *username, const char *password,
+			 void *user_data)
+{
+	struct spthui *spthui = user_data;
+
+	/* FIXME: called from a UI callback so we cannot really
+	 * call sp_session_login() without guarding against
+	 * other callers, notably the main process_events()
+	 * thread.
+	 */
+	sp_session_login(spthui->sp_session,
+			 username, password,
+			 0, (const char *)NULL);
+}
+
 int main(int argc, char **argv)
 {
 	sp_session_config config;
@@ -965,7 +980,7 @@ int main(int argc, char **argv)
 	pthread_create(&spthui.spotify_worker, (pthread_attr_t *)NULL,
 		       spotify_worker, &spthui);
 
-	spthui.login_dialog = login_dialog_init(spthui.sp_session,
+	spthui.login_dialog = login_dialog_init(try_login_cb,
 						spthui_exit,
 						&spthui);
 
