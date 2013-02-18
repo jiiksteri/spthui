@@ -28,6 +28,7 @@ struct item *item_init_albumbrowse(struct albumbrowse *browse, const char *name)
 void item_free(struct item *item);
 
 enum item_type item_type(struct item *item);
+const char *item_name(struct item *item);
 
 
 sp_track *item_track(struct item *item);

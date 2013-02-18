@@ -2,6 +2,7 @@
 
 #include <libspotify/api.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #include "search.h"
@@ -10,15 +11,17 @@
 struct item {
 	enum item_type type;
 	void *item;
+	char *name;
 };
 
-static struct item *item_init(enum item_type type, void *p)
+static struct item *item_init(enum item_type type, void *p, const char *name)
 {
 	struct item *item;
 
 	if ((item = malloc(sizeof(*item))) != NULL) {
 		item->type = type;
 		item->item = p;
+		item->name = strdup(name);
 	}
 
 	return item;
@@ -27,36 +30,36 @@ static struct item *item_init(enum item_type type, void *p)
 struct item *item_init_playlist(sp_playlist *pl)
 {
 	sp_playlist_add_ref(pl);
-	return item_init(ITEM_PLAYLIST, pl);
+	return item_init(ITEM_PLAYLIST, pl, sp_playlist_name(pl));
 }
 
 struct item *item_init_track(sp_track *track)
 {
 	sp_track_add_ref(track);
-	return item_init(ITEM_TRACK, track);
+	return item_init(ITEM_TRACK, track, sp_track_name(track));
 }
 
 struct item *item_init_none(void)
 {
-	return item_init(ITEM_NONE, NULL);
+	return item_init(ITEM_NONE, NULL, "NONE");
 }
 
 struct item *item_init_search(struct search *search)
 {
 	sp_search_add_ref(search->search);
-	return item_init(ITEM_SEARCH, search);
+	return item_init(ITEM_SEARCH, search, sp_search_query(search->search));
 }
 
 struct item *item_init_artist(sp_artist *artist)
 {
 	sp_artist_add_ref(artist);
-	return item_init(ITEM_ARTIST, artist);
+	return item_init(ITEM_ARTIST, artist, sp_artist_name(artist));
 }
 
 struct item *item_init_album(sp_album *album)
 {
 	sp_album_add_ref(album);
-	return item_init(ITEM_ALBUM, album);
+	return item_init(ITEM_ALBUM, album, sp_album_name(album));
 }
 
 struct item *item_init_albumbrowse(struct albumbrowse *browse, const char *name)
@@ -64,7 +67,7 @@ struct item *item_init_albumbrowse(struct albumbrowse *browse, const char *name)
 	sp_albumbrowse_add_ref(browse->browse);
 	/* cannot use sp_album_name(sp_albumbrowse_album()),
 	 * as it's probably not loaded yet. */
-	return item_init(ITEM_ALBUMBROWSE, browse);
+	return item_init(ITEM_ALBUMBROWSE, browse, name);
 }
 
 /* Once this gets a proper module, move this there.
@@ -107,6 +110,7 @@ void item_free(struct item *item)
 		break;
 	}
 
+	free(item->name);
 	free(item);
 }
 
@@ -114,6 +118,11 @@ void item_free(struct item *item)
 enum item_type item_type(struct item *item)
 {
 	return item->type;
+}
+
+const char *item_name(struct item *item)
+{
+	return item->name;
 }
 
 sp_track *item_track(struct item *item)
