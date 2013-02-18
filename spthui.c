@@ -95,10 +95,33 @@ static void expand_item(struct item *item, void *user_data)
 	fprintf(stderr, "%s(): not implemented. spthui=%p\n", __func__, spthui);
 }
 
+
+static inline gboolean view_get_iter_at_pos(GtkTreeView *view,
+					    GdkEventButton *event,
+					    GtkTreeIter *iter)
+{
+	GtkTreePath *path;
+	GtkTreeModel *model;
+	gboolean valid;
+
+	valid = gtk_tree_view_get_path_at_pos(view, event->x, event->y,
+					      &path,
+					      (GtkTreeViewColumn **)NULL,
+					      (gint *)NULL,
+					      (gint *)NULL);
+
+	if (valid) {
+		model = gtk_tree_view_get_model(view);
+		valid = gtk_tree_model_get_iter(model, iter, path);
+		gtk_tree_path_free(path);
+	}
+
+	return valid;
+}
+
 static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, void *user_data)
 {
 	struct spthui *spthui = user_data;
-	GtkTreeSelection *selection;
 	GtkTreeModel *model;
 	struct item *item;
 	char *name;
@@ -108,8 +131,8 @@ static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, voi
 		__func__, widget, G_OBJECT_TYPE_NAME(widget), event->button, user_data);
 
 	if (event->button == 3) {
-		selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
-		if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
+		if (view_get_iter_at_pos(GTK_TREE_VIEW(widget), event, &iter)) {
+			model = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
 			gtk_tree_model_get(model, &iter,
 					   0, &item,
 					   1, &name,
@@ -156,12 +179,7 @@ static GtkTreeView *tab_add(struct spthui *spthui, const char *label_text,
 
 	view = spthui_list_new();
 
-	/* This is kind of lazy. Selection gets set when the user
-	 * right-clicks on an item. So in order to display a context
-	 * menu, we hit the _release_ event of a mouse button and
-	 * check it's the right button and so on and so forth.
-	 */
-	g_signal_connect(view, "button-release-event", G_CALLBACK(spthui_popup_maybe), spthui);
+	g_signal_connect(view, "button-press-event", G_CALLBACK(spthui_popup_maybe), spthui);
 
 	win = gtk_scrolled_window_new(NULL, NULL);
 	gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(view));
