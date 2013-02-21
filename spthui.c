@@ -987,14 +987,13 @@ static void try_login_cb(const char *username, const char *password,
 {
 	struct spthui *spthui = user_data;
 
-	/* FIXME: called from a UI callback so we cannot really
-	 * call sp_session_login() without guarding against
-	 * other callers, notably the main process_events()
-	 * thread.
-	 */
+	spthui_lock(spthui);
+
 	sp_session_login(spthui->sp_session,
 			 username, password,
 			 0, (const char *)NULL);
+
+	spthui_unlock(spthui);
 }
 
 int main(int argc, char **argv)
