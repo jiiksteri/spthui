@@ -25,6 +25,7 @@
 #include "playback_panel.h"
 #include "login_dialog.h"
 #include "view.h"
+#include "albumbrowse.h"
 
 #define SPTHUI_SEARCH_CHUNK 20
 
@@ -89,13 +90,6 @@ static GType list_columns[] = {
 	G_TYPE_STRING,  /* item name */
 };
 
-static void expand_item(struct item *item, void *user_data)
-{
-	struct spthui *spthui = user_data;
-	fprintf(stderr, "%s(): not implemented. spthui=%p\n", __func__, spthui);
-}
-
-
 static inline gboolean view_get_iter_at_pos(GtkTreeView *view,
 					    GdkEventButton *event,
 					    GtkTreeIter *iter)
@@ -119,33 +113,6 @@ static inline gboolean view_get_iter_at_pos(GtkTreeView *view,
 	return valid;
 }
 
-static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, void *user_data)
-{
-	struct spthui *spthui = user_data;
-	GtkTreeModel *model;
-	struct item *item;
-	char *name;
-	GtkTreeIter iter;
-
-	fprintf(stderr, "%s(): widget=%p(%s) button=%u user_data=%p\n",
-		__func__, widget, G_OBJECT_TYPE_NAME(widget), event->button, user_data);
-
-	if (event->button == 3) {
-		if (view_get_iter_at_pos(GTK_TREE_VIEW(widget), event, &iter)) {
-			model = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
-			gtk_tree_model_get(model, &iter,
-					   0, &item,
-					   1, &name,
-					   -1);
-			popup_show(item, name, event->button, event->time,
-				   expand_item, spthui);
-		} else {
-			fprintf(stderr, "%s(): nothing selected\n", __func__);
-		}
-	}
-
-	return FALSE;
-}
 
 static GtkTreeView *spthui_list_new(void)
 {
@@ -168,6 +135,8 @@ static GtkTreeView *spthui_list_new(void)
 	return view;
 }
 
+
+static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, void *user_data);
 
 static GtkTreeView *tab_add(struct spthui *spthui, const char *label_text,
 			    struct item *item)
@@ -604,6 +573,107 @@ static void playlist_expand_into(GtkListStore *store, sp_playlist *pl)
 	for (i = 0; i < sp_playlist_num_tracks(pl); i++) {
 		add_track(store, sp_playlist_track(pl, i));
 	}
+}
+
+static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userdata)
+{
+	struct albumbrowse *browse = userdata;
+	int i;
+
+	printf("%s(): store=%p\n", __func__, browse->store);
+	for (i = 0; i < sp_albumbrowse_num_tracks(sp_browse); i++) {
+		add_track(browse->store, sp_albumbrowse_track(sp_browse, i));
+	}
+
+	sp_albumbrowse_release(sp_browse);
+}
+
+/* A couple of dull prototypes until a proper place for these helpers can be
+ * figured out. */
+
+static void setup_selection_tracker(GtkTreeView *view, struct spthui *spthui);
+
+static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
+				GtkTreeViewColumn *column,
+				void *userdata);
+
+
+static void expand_album(struct spthui *spthui, sp_album *album)
+{
+
+	struct item *item;
+	struct albumbrowse *browse;
+	GtkTreeView *view;
+
+	browse = malloc(sizeof(*browse));
+	if (browse == NULL) {
+		fprintf(stderr, "%s(): %s\n", __func__, strerror(errno));
+		return;
+	}
+	memset(browse, 0, sizeof(*browse));
+
+	browse->browse = sp_albumbrowse_create(spthui->sp_session, album,
+					       expand_album_browse_complete,
+					       browse);
+
+	item = item_init_albumbrowse(browse, sp_album_name(album));
+
+	view = tab_add(spthui, item_name(item), item);
+	setup_selection_tracker(view, spthui);
+	g_signal_connect(view, "row-activated",
+			 G_CALLBACK(list_item_activated), spthui);
+
+	browse->store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
+
+	fprintf(stderr, "%s(): spthui=%p view=%p album=%p\n", __func__, spthui, view, album);
+}
+
+static void expand_item(struct item *item, void *user_data)
+{
+	struct spthui *spthui = user_data;
+
+	spthui_lock(spthui);
+
+	fprintf(stderr, "%s(): item=%p\n", __func__, item);
+	switch (item_type(item)) {
+	case ITEM_ALBUM:
+		expand_album(spthui, item_album(item));
+		break;
+	default:
+		/* Nuffin */
+		break;
+	}
+
+	spthui_unlock(spthui);
+
+}
+
+static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, void *user_data)
+{
+	struct spthui *spthui = user_data;
+	GtkTreeModel *model;
+	struct item *item;
+	char *name;
+	GtkTreeIter iter;
+
+	fprintf(stderr, "%s(): widget=%p(%s) button=%u user_data=%p\n",
+		__func__, widget, G_OBJECT_TYPE_NAME(widget), event->button, user_data);
+
+	if (event->button == 3) {
+		if (view_get_iter_at_pos(GTK_TREE_VIEW(widget), event, &iter)) {
+			model = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
+			gtk_tree_model_get(model, &iter,
+					   0, &item,
+					   1, &name,
+					   -1);
+			popup_show(item, name, event->button, event->time,
+				   expand_item, spthui);
+		} else {
+			fprintf(stderr, "%s(): nothing selected\n", __func__);
+		}
+	}
+
+	return FALSE;
 }
 
 static void track_play(struct spthui *spthui, sp_track *track)
