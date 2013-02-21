@@ -26,6 +26,7 @@
 #include "login_dialog.h"
 #include "view.h"
 #include "albumbrowse.h"
+#include "tabs.h"
 
 #define SPTHUI_SEARCH_CHUNK 20
 
@@ -48,9 +49,7 @@ struct spthui {
 	GtkEntry *query;
 
 	/* tab bookkeeping */
-	GtkNotebook *tabs;
-	struct item **tab_items;
-	int n_tab_items;
+	struct tabs *tabs;
 
 	struct playback_panel *playback_panel;
 	int playing;
@@ -113,8 +112,9 @@ static inline gboolean view_get_iter_at_pos(GtkTreeView *view,
 	return valid;
 }
 
+static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, void *user_data);
 
-static GtkTreeView *spthui_list_new(void)
+static GtkTreeView *spthui_list_new(struct spthui *spthui)
 {
 	GtkTreeView *view;
 	GtkTreeModel *model;
@@ -132,60 +132,13 @@ static GtkTreeView *spthui_list_new(void)
 							  "text", 1,
 							  NULL);
 	gtk_tree_view_append_column(view, column);
-	return view;
-}
 
-
-static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, void *user_data);
-
-static GtkTreeView *tab_add(struct spthui *spthui, const char *label_text,
-			    struct item *item)
-{
-	GtkWidget *win;
-	GtkTreeView *view;
-	GtkWidget *label;
-	int n_pages;
-
-	view = spthui_list_new();
 
 	g_signal_connect(view, "button-press-event", G_CALLBACK(spthui_popup_maybe), spthui);
 
-	win = gtk_scrolled_window_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(view));
-
-	label = gtk_label_new(label_text);
-	gtk_label_set_max_width_chars(GTK_LABEL(label), 10);
-
-	n_pages = gtk_notebook_get_n_pages(spthui->tabs);
-	if (n_pages >= spthui->n_tab_items) {
-		spthui->tab_items = realloc(spthui->tab_items,
-					    (spthui->n_tab_items + 5) *
-					    sizeof(*spthui->tab_items));
-		spthui->n_tab_items += 5;
-		memset(&spthui->tab_items[n_pages], 0,
-		       (spthui->n_tab_items - n_pages) * sizeof(*spthui->tab_items));
-
-	}
-
-	spthui->tab_items[n_pages] = item;
-	gtk_notebook_append_page(spthui->tabs, win, label);
-
-	gtk_widget_show_all(win);
-
 	return view;
-
 }
 
-static GtkTreeView *tab_get(GtkNotebook *tabs, int ind)
-{
-	GList *children;
-	GtkTreeView *tab;
-
-	children = gtk_container_get_children(GTK_CONTAINER(gtk_notebook_get_nth_page(tabs, ind)));
-	tab = GTK_TREE_VIEW(children->data);
-	g_list_free(children);
-	return tab;
-}
 
 static sp_error process_events(struct spthui *spthui, struct timespec *timeout)
 {
@@ -618,7 +571,8 @@ static void expand_album(struct spthui *spthui, sp_album *album)
 
 	item = item_init_albumbrowse(browse, sp_album_name(album));
 
-	view = tab_add(spthui, item_name(item), item);
+	view = spthui_list_new(spthui);
+	tab_add(spthui->tabs, view, item_name(item), item);
 	setup_selection_tracker(view, spthui);
 	g_signal_connect(view, "row-activated",
 			 G_CALLBACK(list_item_activated), spthui);
@@ -788,7 +742,8 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 
 	switch (item_type(item)) {
 	case ITEM_PLAYLIST:
-		view = tab_add(spthui, name, item);
+		view = spthui_list_new(spthui);
+		tab_add(spthui->tabs, view, name, item);
 		setup_selection_tracker(view, spthui);
 		g_signal_connect(view, "row-activated",
 				 G_CALLBACK(list_item_activated), spthui);
@@ -861,12 +816,10 @@ static int read_app_key(const void **bufp, size_t *sizep)
  */
 static void playback_toggle_clicked(struct playback_panel *panel, void *user_data);
 
-static void close_selected_tab(GtkButton *btn, void *userdata)
+static void close_selected_tab(struct tabs *tabs, int current, void *userdata)
 {
 	struct spthui *spthui = userdata;
-	int current;
 
-	current = gtk_notebook_get_current_page(spthui->tabs);
 	/* Don't allow closing of the first tab */
 	if (current > 0) {
 
@@ -887,46 +840,31 @@ static void close_selected_tab(GtkButton *btn, void *userdata)
 			playback_toggle_clicked(spthui->playback_panel, spthui);
 		}
 
-		gtk_notebook_remove_page(spthui->tabs, current);
-		item_free(spthui->tab_items[current]);
-		spthui->tab_items[current] = NULL;
-		while (++current < spthui->n_tab_items && spthui->tab_items[current]) {
-			spthui->tab_items[current-1] = spthui->tab_items[current];
-			spthui->tab_items[current] = NULL;
-		}
+		tabs_remove(spthui->tabs, current);
 	}
 }
 
-static void switch_page(GtkNotebook *notebook, GtkWidget *page,
-			guint page_num, void *userdata)
+static void switch_page(struct tabs *tabs, unsigned int page_num, void *userdata)
 {
 	struct spthui *spthui = userdata;
 
 	fprintf(stderr, "%s(): %d\n", __func__, page_num);
-	spthui->selected_view = tab_get(notebook, page_num);
+	spthui->selected_view = tab_get(tabs, page_num);
 }
+
+static struct tabs_ops tabs_ops = {
+	.switch_cb = switch_page,
+	.close_cb = close_selected_tab,
+};
 
 static void setup_tabs(struct spthui *spthui)
 {
 	GtkTreeView *view;
-	GtkButton *btn;
 
-	spthui->tabs = GTK_NOTEBOOK(gtk_notebook_new());
-	spthui->tab_items = malloc(5 * sizeof(*spthui->tab_items));
+	spthui->tabs = tabs_init(&tabs_ops, spthui);
 
-	g_signal_connect(spthui->tabs, "switch-page",
-			 G_CALLBACK(switch_page), spthui);
-
-	btn = GTK_BUTTON(gtk_button_new());
-	gtk_button_set_image(btn,
-			     gtk_image_new_from_stock(GTK_STOCK_CLOSE,
-						      GTK_ICON_SIZE_SMALL_TOOLBAR));
-	gtk_notebook_set_action_widget(spthui->tabs, GTK_WIDGET(btn), GTK_PACK_END);
-	g_signal_connect(GTK_WIDGET(btn), "clicked",
-			 G_CALLBACK(close_selected_tab), spthui);
-	gtk_widget_show_all(GTK_WIDGET(btn));
-
-	view = tab_add(spthui, "Playlists", item_init_none());
+	view = spthui_list_new(spthui);
+	tab_add(spthui->tabs, view, "Playlists", item_init_none());
 
 	g_signal_connect(view, "row-activated",
 			 G_CALLBACK(list_item_activated), spthui);
@@ -1023,7 +961,8 @@ static void init_search(GtkEntry *query, void *user_data)
 			"%s(): %s\n", __func__, strerror(errno));
 	}
 
-	view = tab_add(spthui, search->name, item);
+	view = spthui_list_new(spthui);
+	tab_add(spthui->tabs, view, search->name, item);
 
 	g_signal_connect(view, "row-activated",
 			 G_CALLBACK(list_item_activated), spthui);
@@ -1068,7 +1007,7 @@ int main(int argc, char **argv)
 	struct spthui spthui;
 	char *home;
 	GtkBox *vbox;
-	int err, i;
+	int err;
 
 
 	gdk_threads_init();
@@ -1129,7 +1068,7 @@ int main(int argc, char **argv)
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(spthui.query), FALSE, FALSE, 0);
 
 	setup_tabs(&spthui);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(spthui.tabs),
+	gtk_box_pack_start(GTK_BOX(vbox), tabs_widget(spthui.tabs),
 			   TRUE, TRUE, 0);
 
 	spthui.playback_panel = playback_panel_init(&playback_panel_ops, &spthui);
@@ -1157,12 +1096,7 @@ int main(int argc, char **argv)
 
 	err = join_worker(&spthui);
 
-	if (spthui.tab_items != NULL) {
-		for (i = 0; spthui.tab_items[i]; i++) {
-			item_free(spthui.tab_items[i]);
-		}
-		free(spthui.tab_items);
-	}
+	tabs_destroy(spthui.tabs);
 
 	playback_panel_destroy(spthui.playback_panel);
 	login_dialog_destroy(spthui.login_dialog);
