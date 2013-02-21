@@ -89,6 +89,28 @@ static GType list_columns[] = {
 	G_TYPE_STRING,  /* item name */
 };
 
+
+static gboolean view_get_selected(GtkTreeView *view, struct item **item, char **name)
+{
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+	GtkTreeSelection *selection;
+	gboolean have_selected;
+
+	selection = gtk_tree_view_get_selection(view);
+	have_selected = gtk_tree_selection_get_selected(selection, &model, &iter);
+
+	if (have_selected) {
+		gtk_tree_model_get(model, &iter,
+				   0, item,
+				   1, name,
+				   -1);
+	}
+	return have_selected;
+}
+
+
+
 static inline gboolean view_get_iter_at_pos(GtkTreeView *view,
 					    GdkEventButton *event,
 					    GtkTreeIter *iter)
@@ -448,11 +470,45 @@ static void get_audio_buffer_stats(sp_session *session, sp_audio_buffer_stats *s
 
 }
 
-/* FIXME: Move play_current() and dependencies here to avoid
- * this local prototype. We only provide the prototype so the
- * diff is smaller.
- */
-static void play_current(struct spthui *spthui);
+static void track_play(struct spthui *spthui, sp_track *track)
+{
+	sp_error err;
+
+	if (track != NULL) {
+		err = sp_session_player_load(spthui->sp_session, track);
+		if (err != SP_ERROR_OK) {
+			fprintf(stderr, "%s(): %s failed to load: %s\n",
+				__func__, sp_track_name(track), sp_error_message(err));
+			return;
+		}
+	}
+
+	err = sp_session_player_play(spthui->sp_session, track != NULL);
+	if (err != SP_ERROR_OK) {
+		fprintf(stderr, "%s(): failed to %s playback: %s\n",
+			__func__,
+			track != NULL ? "start" : "stop",
+			sp_error_message(err));
+	} else {
+		spthui->playing = 1;
+		ui_update_playing(spthui);
+	}
+}
+
+
+static void play_current(struct spthui *spthui)
+{
+	struct item *item;
+	char *name;
+
+	if (view_get_selected(spthui->current_view, &item, &name)) {
+		spthui->current_track = item_track(item);
+		track_play(spthui, item_track(item));
+		ui_update_playing(spthui);
+	}
+}
+
+
 
 static void end_of_track(sp_session *session)
 {
@@ -541,10 +597,42 @@ static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userda
 	sp_albumbrowse_release(sp_browse);
 }
 
-/* A couple of dull prototypes until a proper place for these helpers can be
- * figured out. */
+static void track_selection_changed(GtkTreeSelection *selection, void *userdata)
+{
+	struct spthui *spthui = userdata;
+	GtkTreeIter iter;
+	GtkTreeModel *model;
+	struct item *selected;
 
-static void setup_selection_tracker(GtkTreeView *view, struct spthui *spthui);
+	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
+
+		gtk_tree_model_get(model, &iter,
+				   0, &selected,
+				   -1);
+
+		if (item_type(selected) != ITEM_TRACK) {
+			fprintf(stderr, "%s(): no idea how to handle item_type %d\n",
+				__func__, item_type(selected));
+		} else {
+			spthui->selected_track = item_track(selected);
+		}
+	}
+
+	fprintf(stderr, "%s(): selected=%p:%p current=%p:%p\n",
+		__func__,
+		spthui->selected_view, spthui->selected_track,
+		spthui->current_view, spthui->current_track);
+}
+
+static void setup_selection_tracker(GtkTreeView *view, struct spthui *spthui)
+{
+	GtkTreeSelection *selection;
+
+	selection = gtk_tree_view_get_selection(view);
+	g_signal_connect(selection, "changed",
+			 G_CALLBACK(track_selection_changed), spthui);
+}
+
 
 static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 				GtkTreeViewColumn *column,
@@ -628,98 +716,6 @@ static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, voi
 	}
 
 	return FALSE;
-}
-
-static void track_play(struct spthui *spthui, sp_track *track)
-{
-	sp_error err;
-
-	if (track != NULL) {
-		err = sp_session_player_load(spthui->sp_session, track);
-		if (err != SP_ERROR_OK) {
-			fprintf(stderr, "%s(): %s failed to load: %s\n",
-				__func__, sp_track_name(track), sp_error_message(err));
-			return;
-		}
-	}
-
-	err = sp_session_player_play(spthui->sp_session, track != NULL);
-	if (err != SP_ERROR_OK) {
-		fprintf(stderr, "%s(): failed to %s playback: %s\n",
-			__func__,
-			track != NULL ? "start" : "stop",
-			sp_error_message(err));
-	} else {
-		spthui->playing = 1;
-		ui_update_playing(spthui);
-	}
-}
-
-static void track_selection_changed(GtkTreeSelection *selection, void *userdata)
-{
-	struct spthui *spthui = userdata;
-	GtkTreeIter iter;
-	GtkTreeModel *model;
-	struct item *selected;
-
-	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-
-		gtk_tree_model_get(model, &iter,
-				   0, &selected,
-				   -1);
-
-		if (item_type(selected) != ITEM_TRACK) {
-			fprintf(stderr, "%s(): no idea how to handle item_type %d\n",
-				__func__, item_type(selected));
-		} else {
-			spthui->selected_track = item_track(selected);
-		}
-	}
-
-	fprintf(stderr, "%s(): selected=%p:%p current=%p:%p\n",
-		__func__,
-		spthui->selected_view, spthui->selected_track,
-		spthui->current_view, spthui->current_track);
-}
-
-static void setup_selection_tracker(GtkTreeView *view, struct spthui *spthui)
-{
-	GtkTreeSelection *selection;
-
-	selection = gtk_tree_view_get_selection(view);
-	g_signal_connect(selection, "changed",
-			 G_CALLBACK(track_selection_changed), spthui);
-}
-
-static gboolean view_get_selected(GtkTreeView *view, struct item **item, char **name)
-{
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	GtkTreeSelection *selection;
-	gboolean have_selected;
-
-	selection = gtk_tree_view_get_selection(view);
-	have_selected = gtk_tree_selection_get_selected(selection, &model, &iter);
-
-	if (have_selected) {
-		gtk_tree_model_get(model, &iter,
-				   0, item,
-				   1, name,
-				   -1);
-	}
-	return have_selected;
-}
-
-static void play_current(struct spthui *spthui)
-{
-	struct item *item;
-	char *name;
-
-	if (view_get_selected(spthui->current_view, &item, &name)) {
-		spthui->current_track = item_track(item);
-		track_play(spthui, item_track(item));
-		ui_update_playing(spthui);
-	}
 }
 
 static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
