@@ -22,6 +22,6 @@ void tab_add(struct tabs *tabs, GtkTreeView *view,
 
 GtkTreeView *tab_get(struct tabs *tabs, int ind);
 
-void tabs_remove(struct tabs *tabs, int ind);
+struct item *tabs_remove(struct tabs *tabs, int ind);
 
 #endif

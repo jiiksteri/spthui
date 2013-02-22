@@ -132,15 +132,19 @@ GtkTreeView *tab_get(struct tabs *tabs, int ind)
 	return tab;
 }
 
-void tabs_remove(struct tabs *tabs, int ind)
+struct item *tabs_remove(struct tabs *tabs, int ind)
 {
+	struct item *removed;
+
 	gtk_notebook_remove_page(tabs->tabs, ind);
 
-	item_free(tabs->tab_items[ind]);
-	tabs->tab_items[ind] = NULL;
+	removed = tabs->tab_items[ind];
 
+	tabs->tab_items[ind] = NULL;
 	while (++ind < tabs->n_tab_items && tabs->tab_items[ind]) {
 		tabs->tab_items[ind-1] = tabs->tab_items[ind];
 		tabs->tab_items[ind] = NULL;
 	}
+
+	return removed;
 }
