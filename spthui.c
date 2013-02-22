@@ -136,6 +136,9 @@ static inline gboolean view_get_iter_at_pos(GtkTreeView *view,
 
 static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, void *user_data);
 
+static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
+				GtkTreeViewColumn *column, void *userdata);
+
 static GtkTreeView *spthui_list_new(struct spthui *spthui)
 {
 	GtkTreeView *view;
@@ -157,6 +160,7 @@ static GtkTreeView *spthui_list_new(struct spthui *spthui)
 
 
 	g_signal_connect(view, "button-press-event", G_CALLBACK(spthui_popup_maybe), spthui);
+	g_signal_connect(view, "row-activated", G_CALLBACK(list_item_activated), spthui);
 
 	return view;
 }
@@ -634,11 +638,6 @@ static void setup_selection_tracker(GtkTreeView *view, struct spthui *spthui)
 }
 
 
-static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
-				GtkTreeViewColumn *column,
-				void *userdata);
-
-
 static void expand_album(struct spthui *spthui, sp_album *album)
 {
 
@@ -662,8 +661,6 @@ static void expand_album(struct spthui *spthui, sp_album *album)
 	view = spthui_list_new(spthui);
 	tab_add(spthui->tabs, view, item_name(item), item);
 	setup_selection_tracker(view, spthui);
-	g_signal_connect(view, "row-activated",
-			 G_CALLBACK(list_item_activated), spthui);
 
 	browse->store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
 
@@ -741,8 +738,6 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 		view = spthui_list_new(spthui);
 		tab_add(spthui->tabs, view, name, item);
 		setup_selection_tracker(view, spthui);
-		g_signal_connect(view, "row-activated",
-				 G_CALLBACK(list_item_activated), spthui);
 		playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)),
 				     item_playlist(item));
 		break;
@@ -861,10 +856,6 @@ static void setup_tabs(struct spthui *spthui)
 
 	view = spthui_list_new(spthui);
 	tab_add(spthui->tabs, view, "Playlists", item_init_none());
-
-	g_signal_connect(view, "row-activated",
-			 G_CALLBACK(list_item_activated), spthui);
-
 }
 
 static void spthui_exit(void *user_data)
@@ -959,10 +950,6 @@ static void init_search(GtkEntry *query, void *user_data)
 
 	view = spthui_list_new(spthui);
 	tab_add(spthui->tabs, view, search->name, item);
-
-	g_signal_connect(view, "row-activated",
-			 G_CALLBACK(list_item_activated), spthui);
-
 
 	search->store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
 	search->search =
