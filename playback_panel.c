@@ -163,8 +163,14 @@ static gboolean update_progress(struct playback_panel *panel)
 	int max;
 	double frac;
 
-	pos = ++panel->position;
-	max = panel->track ? sp_track_duration(panel->track) / 1000 : 0;
+	/* FIXME: Have a HZ-like constant. Right now we're updating
+	 * once per second and sp_track_duration() is millis.
+	 *
+	 * And we're racing against all sorts of things, ui stealing
+	 * the track from under us or seek changing position (soon).
+	 */
+	pos = panel->position += 1000;
+	max = panel->track ? sp_track_duration(panel->track) : 0;
 
 	if (pos >= max) {
 		/* Accidents happen. Cap it at max and avoid
