@@ -889,9 +889,26 @@ static void next_clicked(struct playback_panel *panel, void *user_data)
 static void playback_toggle_clicked(struct playback_panel *panel, void *user_data)
 {
 	struct spthui *spthui = user_data;
+	struct item *item;
+	sp_track *track;
+	char *name;
 
-	if (spthui->current_track == NULL) {
-		return;
+	if (!spthui->playing) {
+
+		if (spthui->current_view == NULL) {
+			spthui->current_view = spthui->selected_view;
+		}
+
+		if (view_get_selected(spthui->current_view, &item, &name)) {
+			if (item_type(item) != ITEM_TRACK) {
+				return;
+			}
+			track = item_track(item);
+			if (spthui->current_track != track) {
+				sp_session_player_load(spthui->sp_session, track);
+				spthui->current_track = track;
+			}
+		}
 	}
 
 	sp_session_player_play(spthui->sp_session, !spthui->playing);
