@@ -802,11 +802,6 @@ static int read_app_key(const void **bufp, size_t *sizep)
 	return 0;
 }
 
-/* FIXME: Move the whole function here. Better yet, move
- * it to a separate module
- */
-static void playback_toggle_clicked(struct playback_panel *panel, void *user_data);
-
 static void close_selected_tab(struct tabs *tabs, int current, void *userdata)
 {
 	struct spthui *spthui = userdata;
@@ -823,12 +818,12 @@ static void close_selected_tab(struct tabs *tabs, int current, void *userdata)
 
 			/* XXX: Needs locking against spotify threads, see
 			 * ->end_of_track()
-			 *
-			 * We kind of cheat by calling the toggle cb directly
 			 */
 			spthui->current_track = NULL;
 			spthui->current_view = NULL;
-			playback_toggle_clicked(spthui->playback_panel, spthui);
+			sp_session_player_play(spthui->sp_session, 0);
+			spthui->playing = 0;
+			ui_update_playing(spthui);
 		}
 
 		tabs_remove(spthui->tabs, current);
