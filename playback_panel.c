@@ -47,12 +47,19 @@ static gboolean progress_clicked(GtkWidget *widget,
 				 void *user_data)
 {
 	GdkWindow *win;
+	struct playback_panel *panel = user_data;
+	int duration, target;
+
+	if (panel->track == NULL || (duration = sp_track_duration(panel->track)) == 0) {
+		return FALSE;
+	}
 
 	win = gtk_widget_get_window(widget);
-	fprintf(stderr,
-		"%s(): TODO: Implement seek. (%g,%g) (%g of width)\n",
-		__func__, event->x, event->y,
-		event->x / (gdouble)gdk_window_get_width(win));
+	target = event->x * duration / (gdouble)gdk_window_get_width(win);
+
+	if (panel->ops->seek(panel, target, panel->cb_data) == SP_ERROR_OK) {
+		panel->position = target;
+	}
 
 	return FALSE;
 }
@@ -167,7 +174,7 @@ static gboolean update_progress(struct playback_panel *panel)
 	 * once per second and sp_track_duration() is millis.
 	 *
 	 * And we're racing against all sorts of things, ui stealing
-	 * the track from under us or seek changing position (soon).
+	 * the track from under us or seek changing position.
 	 */
 	pos = panel->position += 1000;
 	max = panel->track ? sp_track_duration(panel->track) : 0;

@@ -10,6 +10,7 @@ struct playback_panel_ops {
 	void (*toggle_playback)(struct playback_panel *panel, void *user_data);
 	void (*next)(struct playback_panel *panel, void *user_data);
 	void (*prev)(struct playback_panel *panel, void *user_data);
+	sp_error (*seek)(struct playback_panel *panel, int target_ms, void *user_data);
 };
 
 struct playback_panel *playback_panel_init(struct playback_panel_ops *ops, void *cb_data);

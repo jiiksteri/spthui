@@ -916,11 +916,28 @@ static void playback_toggle_clicked(struct playback_panel *panel, void *user_dat
 	ui_update_playing(spthui);
 }
 
+static sp_error spthui_seek(struct playback_panel *panel, int target_ms, void *user_data)
+{
+	struct spthui *spthui = user_data;
+	sp_error err;
+
+	spthui_lock(spthui);
+	err = sp_session_player_seek(spthui->sp_session, target_ms);
+	spthui_unlock(spthui);
+
+	if (err != SP_ERROR_OK) {
+		fprintf(stderr, "%s(): %s\n",
+			__func__, sp_error_message(err));
+	}
+	return err;
+}
+
 
 static struct playback_panel_ops playback_panel_ops = {
 	.toggle_playback = playback_toggle_clicked,
 	.next = next_clicked,
 	.prev = prev_clicked,
+	.seek = spthui_seek,
 };
 
 static void search_complete(sp_search *sp_search, void *userdata)
