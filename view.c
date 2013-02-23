@@ -38,6 +38,16 @@ static GtkTreePath *tree_model_get_path_last(GtkTreeModel *model)
 		: NULL;
 }
 
+
+static void select_path(GtkTreeView *view, GtkTreeSelection *selection,
+			GtkTreePath *path)
+{
+	gtk_tree_selection_select_path(selection, path);
+	gtk_tree_view_scroll_to_cell(view, path,
+				     (GtkTreeViewColumn *)NULL,
+				     FALSE, 0.0, 0.0);
+}
+
 int view_navigate_prev(GtkTreeView *view)
 {
 	GtkTreeModel *model;
@@ -53,7 +63,7 @@ int view_navigate_prev(GtkTreeView *view)
 	}
 
 	if (path != NULL) {
-		gtk_tree_selection_select_path(selection, path);
+		select_path(view, selection, path);
 		gtk_tree_path_free(path);
 	}
 
@@ -80,7 +90,7 @@ int view_navigate_next(GtkTreeView *view)
 	}
 
 	if (path != NULL) {
-		gtk_tree_selection_select_path(selection, path);
+		select_path(view, selection, path);
 		gtk_tree_path_free(path);
 	}
 
