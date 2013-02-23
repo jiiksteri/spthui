@@ -151,6 +151,7 @@ static GtkTreeView *spthui_list_new(struct spthui *spthui)
 
 	model = GTK_TREE_MODEL(gtk_list_store_newv(n_columns, list_columns));
 	view = GTK_TREE_VIEW(gtk_tree_view_new_with_model(model));
+	gtk_tree_view_set_headers_visible(view, FALSE);
 
 	column = gtk_tree_view_column_new_with_attributes("Item",
 							  gtk_cell_renderer_text_new(),
