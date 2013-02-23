@@ -952,8 +952,7 @@ static struct playback_panel_ops playback_panel_ops = {
 
 static void search_complete(sp_search *sp_search, void *userdata)
 {
-	struct item *item = userdata;
-	struct search *search = item_search(item);
+	struct search *search = userdata;
 	int i;
 
 	gdk_threads_enter();
@@ -981,16 +980,6 @@ static void init_search(GtkEntry *query, void *user_data)
 	}
 
 	search->name = strdup(gtk_entry_get_text(query));
-
-	if ((item = item_init_search(search)) == NULL) {
-		fprintf(stderr,
-			"%s(): %s\n", __func__, strerror(errno));
-	}
-
-	view = spthui_list_new(spthui);
-	tab_add(spthui->tabs, view, search->name, item);
-
-	search->store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
 	search->search =
 		sp_search_create(spthui->sp_session,
 				 gtk_entry_get_text(query),
@@ -1004,8 +993,17 @@ static void init_search(GtkEntry *query, void *user_data)
 				 0, SPTHUI_SEARCH_CHUNK,
 				 SP_SEARCH_STANDARD,
 				 search_complete,
-				 item);
+				 search);
 
+	if ((item = item_init_search(search)) == NULL) {
+		fprintf(stderr,
+			"%s(): %s\n", __func__, strerror(errno));
+	}
+
+	view = spthui_list_new(spthui);
+	tab_add(spthui->tabs, view, search->name, item);
+
+	search->store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
 }
 
 static void try_login_cb(const char *username, const char *password,
