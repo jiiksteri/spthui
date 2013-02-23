@@ -667,6 +667,17 @@ static void expand_album(struct spthui *spthui, sp_album *album)
 	fprintf(stderr, "%s(): spthui=%p view=%p album=%p\n", __func__, spthui, view, album);
 }
 
+static void expand_playlist(struct spthui *spthui, struct item *item)
+{
+	GtkTreeView *view;
+
+	view = spthui_list_new(spthui);
+	tab_add(spthui->tabs, view, item_name(item), item);
+	setup_selection_tracker(view, spthui);
+	playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)),
+			     item_playlist(item));
+}
+
 static void expand_item(struct item *item, void *user_data)
 {
 	struct spthui *spthui = user_data;
@@ -675,6 +686,9 @@ static void expand_item(struct item *item, void *user_data)
 
 	fprintf(stderr, "%s(): item=%p\n", __func__, item);
 	switch (item_type(item)) {
+	case ITEM_PLAYLIST:
+		expand_playlist(spthui, item);
+		break;
 	case ITEM_ALBUM:
 		expand_album(spthui, item_album(item));
 		break;
@@ -735,11 +749,7 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 
 	switch (item_type(item)) {
 	case ITEM_PLAYLIST:
-		view = spthui_list_new(spthui);
-		tab_add(spthui->tabs, view, name, item);
-		setup_selection_tracker(view, spthui);
-		playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)),
-				     item_playlist(item));
+		expand_playlist(spthui, item);
 		break;
 	case ITEM_TRACK:
 		spthui->current_view = view;

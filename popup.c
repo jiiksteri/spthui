@@ -71,15 +71,24 @@ static void add_item_album(struct popup *popup, sp_album *album)
 	add_item(popup, item_init_album(album), sp_album_name(album));
 }
 
+static void add_item_playlist_expand(struct popup *popup, sp_playlist *pl)
+{
+	add_item(popup, item_init_playlist(pl), "Expand playlist");
+}
+
 static void setup_menu_for_item(struct popup *popup,
 				struct item *item)
 {
 	switch (item_type(item)) {
 	case ITEM_NONE:
-	case ITEM_PLAYLIST:
 	case ITEM_SEARCH:
 	case ITEM_ARTIST:
 	case ITEM_ALBUM:
+
+	case ITEM_PLAYLIST:
+		add_item_playlist_expand(popup, item_playlist(item));
+		break;
+
 	case ITEM_ALBUMBROWSE:
 		gtk_menu_shell_append(GTK_MENU_SHELL(popup->menu),
 				      gtk_menu_item_new_with_label("I am out of options."
