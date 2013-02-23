@@ -8,6 +8,7 @@
 struct popup_item {
 	struct popup_item *next;
 	struct item *item;
+	char *name;
 	struct popup *popup;
 };
 
@@ -27,10 +28,29 @@ static void popup_item_activate(GtkWidget *widget, GdkEventButton *event, struct
 	pitem->popup->selection_cb(pitem->item, pitem->popup->cb_data);
 }
 
-static void add_item(struct popup *popup, struct item *item, const char *name)
+static char *setup_label(const char *fmt, va_list ap)
+{
+	int sz = 32;
+	int needed;
+	char *label;
+
+	label = malloc(sz);
+	needed = vsnprintf(label, sz, fmt, ap);
+	if (needed >= sz) {
+		label = realloc(label, needed+1);
+		vsnprintf(label, needed+1, fmt, ap);
+	}
+
+	return label;
+}
+
+__attribute__((format(printf,3,4)))
+static void add_item(struct popup *popup, struct item *item,
+		     const char *name_fmt, ...)
 {
 	struct popup_item *pitem;
 	GtkWidget *menu_item;
+	va_list ap;
 
 	pitem = malloc(sizeof(*pitem));
 	if (pitem == NULL) {
@@ -40,13 +60,17 @@ static void add_item(struct popup *popup, struct item *item, const char *name)
 	pitem->item = item;
 	pitem->next = NULL;
 
+	va_start(ap, name_fmt);
+	pitem->name = setup_label(name_fmt, ap);
+	va_end(ap);
+
 	if (popup->item_tail != NULL) {
 		popup->item_tail->next = pitem;
 	} else {
 		popup->item_head = popup->item_tail = pitem;
 	}
 
-	menu_item = gtk_menu_item_new_with_label(name);
+	menu_item = gtk_menu_item_new_with_label(pitem->name);
 	/* hrm. One would assume "activate" signal works.
 	 * We're doing something wrong, as it doesn't.
 	 *
@@ -63,12 +87,12 @@ static void add_item(struct popup *popup, struct item *item, const char *name)
 
 static void add_item_artist(struct popup *popup, sp_artist *artist)
 {
-	add_item(popup, item_init_artist(artist), sp_artist_name(artist));
+	add_item(popup, item_init_artist(artist), "Artist: %s", sp_artist_name(artist));
 }
 
 static void add_item_album(struct popup *popup, sp_album *album)
 {
-	add_item(popup, item_init_album(album), sp_album_name(album));
+	add_item(popup, item_init_album(album), "Album: %s", sp_album_name(album));
 }
 
 static void add_item_playlist_expand(struct popup *popup, sp_playlist *pl)
@@ -110,6 +134,7 @@ void popup_destroy(GtkMenuShell *menu, struct popup *popup)
 	for (pitem = popup->item_head; pitem != NULL;) {
 		struct popup_item *saved = pitem->next;
 		item_free(pitem->item);
+		free(pitem->name);
 		free(pitem);
 		pitem = saved;
 	}
