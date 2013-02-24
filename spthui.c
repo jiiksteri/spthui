@@ -910,6 +910,17 @@ static void next_clicked(struct playback_panel *panel, void *user_data)
 
 }
 
+static inline int current_is_playable(struct spthui *spthui)
+{
+	struct item *item;
+	char *name;
+
+	return
+		spthui->current_view != NULL &&
+		view_get_selected(spthui->current_view, &item, &name) &&
+		item_type(item) == ITEM_TRACK;
+}
+
 static void playback_toggle_clicked(struct playback_panel *panel, void *user_data)
 {
 	struct spthui *spthui = user_data;
@@ -921,7 +932,7 @@ static void playback_toggle_clicked(struct playback_panel *panel, void *user_dat
 
 	if (!spthui->playing) {
 
-		if (spthui->current_view == NULL) {
+		if (!current_is_playable(spthui)) {
 			spthui->current_view = spthui->selected_view;
 		}
 
@@ -935,11 +946,15 @@ static void playback_toggle_clicked(struct playback_panel *panel, void *user_dat
 				spthui_player_load(spthui, track);
 				spthui->current_track = track;
 			}
+			sp_session_player_play(spthui->sp_session, !spthui->playing);
+			spthui->playing = !spthui->playing;
 		}
+
+	} else {
+		sp_session_player_play(spthui->sp_session, !spthui->playing);
+		spthui->playing = !spthui->playing;
 	}
 
-	sp_session_player_play(spthui->sp_session, !spthui->playing);
-	spthui->playing = !spthui->playing;
 	ui_update_playing(spthui);
 
 	spthui_unlock(spthui);
