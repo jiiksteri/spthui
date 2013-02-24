@@ -15,8 +15,17 @@ struct playback_panel {
 
 	GtkButton *playback_toggle;
 	GtkProgressBar *track_info;
+
+	/* ->track shouldn't be accessed runtime as there's rarely
+	 * proper locking. We currently use it only for detecting
+	 * track change at *_set_info() where it's the caller's
+	 * responsibility to ensure it's not going away. We should
+	 * get rid of it altogether. */
 	sp_track *track;
+
+	/* These should be used instead of ->track */
 	int position;
+	int duration;
 
 	unsigned int updater;
 
@@ -48,14 +57,14 @@ static gboolean progress_clicked(GtkWidget *widget,
 {
 	GdkWindow *win;
 	struct playback_panel *panel = user_data;
-	int duration, target;
+	int target;
 
-	if (panel->track == NULL || (duration = sp_track_duration(panel->track)) == 0) {
+	if (panel->duration == 0) {
 		return FALSE;
 	}
 
 	win = gtk_widget_get_window(widget);
-	target = event->x * duration / (gdouble)gdk_window_get_width(win);
+	target = event->x * panel->duration / (gdouble)gdk_window_get_width(win);
 
 	if (panel->ops->seek(panel, target, panel->cb_data) == SP_ERROR_OK) {
 		panel->position = target;
@@ -79,17 +88,12 @@ static gboolean progress_clicked_trampoline(GtkWidget *widget,
 	return progress_clicked(GTK_WIDGET(panel->track_info), event, user_data);
 }
 
-static inline int mouse_offset_hms(GdkWindow *win, int x,
-				   sp_track *track,
-				   int *hours, int *minutes, int *seconds)
+static inline void mouse_offset_hms(GdkWindow *win, int x, int duration,
+				    int *hours, int *minutes, int *seconds)
 {
 	int millis;
 
-	if (track == NULL || (millis = sp_track_duration(track)) == 0) {
-		return -1;
-	}
-
-	millis = x * millis / gdk_window_get_width(win);
+	millis = x * duration / gdk_window_get_width(win);
 
 	*seconds = millis / 1000;
 
@@ -98,8 +102,6 @@ static inline int mouse_offset_hms(GdkWindow *win, int x,
 
 	*hours = *minutes / 60;
 	*minutes -= *hours * 60;
-
-	return millis;
 }
 
 static gboolean progress_query_tooltip(GtkWidget *widget,
@@ -111,15 +113,15 @@ static gboolean progress_query_tooltip(GtkWidget *widget,
 	/* 000:00:00 */
 	char tip[16];
 	struct playback_panel *panel = user_data;
-	int millis, hours, minutes, seconds;
+	int hours, minutes, seconds;
 
-	millis = mouse_offset_hms(gtk_widget_get_window(widget), x,
-				  panel->track,
-				  &hours, &minutes, &seconds);
-
-	if (millis < 0) {
+	if (panel->duration <= 0) {
 		return FALSE;
 	}
+
+	mouse_offset_hms(gtk_widget_get_window(widget), x,
+			 panel->duration,
+			 &hours, &minutes, &seconds);
 
 	if (hours > 0) {
 		snprintf(tip, sizeof(tip), "%02d:%02d:%02d",
@@ -237,7 +239,7 @@ static gboolean update_progress(struct playback_panel *panel)
 	 * the track from under us or seek changing position.
 	 */
 	pos = panel->position += 1000;
-	max = panel->track ? sp_track_duration(panel->track) : 0;
+	max = panel->duration;
 
 	if (pos >= max) {
 		/* Accidents happen. Cap it at max and avoid
@@ -264,6 +266,7 @@ void playback_panel_set_info(struct playback_panel *panel,
 		if (track != panel->track) {
 			panel->position = 0;
 			panel->track = track;
+			panel->duration = sp_track_duration(track);
 			gtk_progress_bar_set_fraction(panel->track_info, 0.0);
 		}
 	} else {
