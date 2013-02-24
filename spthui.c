@@ -444,6 +444,7 @@ static int music_delivery(sp_session *session,
 
 }
 
+/* Needs to be called with both gdk lock and spthui_lock() held. */
 static void ui_update_playing(struct spthui *spthui)
 {
 	playback_panel_set_info(spthui->playback_panel,
@@ -470,9 +471,12 @@ static void get_audio_buffer_stats(sp_session *session, sp_audio_buffer_stats *s
 
 }
 
+/* Called with the GDK lock held. Will take spthui_lock(). */
 static void track_play(struct spthui *spthui, sp_track *track)
 {
 	sp_error err;
+
+	spthui_lock(spthui);
 
 	if (track != NULL) {
 		err = sp_session_player_load(spthui->sp_session, track);
@@ -493,6 +497,8 @@ static void track_play(struct spthui *spthui, sp_track *track)
 		spthui->playing = 1;
 		ui_update_playing(spthui);
 	}
+
+	spthui_unlock(spthui);
 }
 
 
@@ -504,7 +510,6 @@ static void play_current(struct spthui *spthui)
 	if (view_get_selected(spthui->current_view, &item, &name)) {
 		spthui->current_track = item_track(item);
 		track_play(spthui, item_track(item));
-		ui_update_playing(spthui);
 	}
 }
 
@@ -514,15 +519,13 @@ static void end_of_track(sp_session *session)
 {
 	struct spthui *spthui = sp_session_userdata(session);
 
+	spthui_unlock(spthui);
 	gdk_threads_enter();
 	if (view_navigate_next(spthui->current_view)) {
 		play_current(spthui);
-	} else {
-		sp_session_player_play(session, 0);
 	}
-
-	ui_update_playing(spthui);
 	gdk_threads_leave();
+	spthui_lock(spthui);
 }
 
 static sp_session_callbacks cb = {
@@ -839,9 +842,7 @@ static void close_selected_tab(struct tabs *tabs, int current, void *userdata)
 		if (tab_get(spthui->tabs, current) == spthui->current_view &&
 		    spthui->playing) {
 
-			/* XXX: Needs locking against spotify threads, see
-			 * ->end_of_track()
-			 */
+			/* XXX: Needs locking against spotify threads. */
 			spthui->current_track = NULL;
 			spthui->current_view = NULL;
 			sp_session_player_play(spthui->sp_session, 0);
@@ -892,7 +893,6 @@ static void prev_clicked(struct playback_panel *panel, void *user_data)
 	struct spthui *spthui = user_data;
 	if (view_navigate_prev(spthui->current_view)) {
 		play_current(spthui);
-		ui_update_playing(spthui);
 	} else {
 		view_navigate_prev(spthui->selected_view);
 	}
