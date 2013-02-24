@@ -60,7 +60,6 @@ struct spthui {
 
 	/* What the user is looking at */
 	GtkTreeView *selected_view;
-	sp_track *selected_track;
 
 	pthread_mutex_t lock;
 	pthread_cond_t cond;
@@ -651,43 +650,6 @@ static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userda
 	sp_albumbrowse_release(sp_browse);
 }
 
-static void track_selection_changed(GtkTreeSelection *selection, void *userdata)
-{
-	struct spthui *spthui = userdata;
-	GtkTreeIter iter;
-	GtkTreeModel *model;
-	struct item *selected;
-
-	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-
-		gtk_tree_model_get(model, &iter,
-				   0, &selected,
-				   -1);
-
-		if (item_type(selected) != ITEM_TRACK) {
-			fprintf(stderr, "%s(): no idea how to handle item_type %d\n",
-				__func__, item_type(selected));
-		} else {
-			spthui->selected_track = item_track(selected);
-		}
-	}
-
-	fprintf(stderr, "%s(): selected=%p:%p current=%p:%p\n",
-		__func__,
-		spthui->selected_view, spthui->selected_track,
-		spthui->current_view, spthui->current_track);
-}
-
-static void setup_selection_tracker(GtkTreeView *view, struct spthui *spthui)
-{
-	GtkTreeSelection *selection;
-
-	selection = gtk_tree_view_get_selection(view);
-	g_signal_connect(selection, "changed",
-			 G_CALLBACK(track_selection_changed), spthui);
-}
-
-
 /* Called with both GDK and spthui_lock() held. */
 static void expand_album(struct spthui *spthui, sp_album *album)
 {
@@ -711,7 +673,6 @@ static void expand_album(struct spthui *spthui, sp_album *album)
 
 	view = spthui_list_new(spthui);
 	tab_add(spthui->tabs, view, item_name(item), item);
-	setup_selection_tracker(view, spthui);
 
 	browse->store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
 
@@ -725,7 +686,6 @@ static void expand_playlist(struct spthui *spthui, struct item *item)
 
 	view = spthui_list_new(spthui);
 	tab_add(spthui->tabs, view, item_name(item), item);
-	setup_selection_tracker(view, spthui);
 	playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)),
 			     item_playlist(item));
 }
