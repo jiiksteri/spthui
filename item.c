@@ -33,10 +33,10 @@ struct item *item_init_playlist(sp_playlist *pl, const char *name)
 	return item_init(ITEM_PLAYLIST, pl, name);
 }
 
-struct item *item_init_track(sp_track *track)
+struct item *item_init_track(sp_track *track, const char *name)
 {
 	sp_track_add_ref(track);
-	return item_init(ITEM_TRACK, track, sp_track_name(track));
+	return item_init(ITEM_TRACK, track, name);
 }
 
 struct item *item_init_none(void)

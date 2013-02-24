@@ -558,12 +558,16 @@ static sp_error join_worker(struct spthui *spthui)
 	return err;
 }
 
-static void add_track(GtkListStore *store, sp_track *track)
+/* NOTE: must be called with gdk lock held and track pinned so we can
+ * _add_ref() it in item_init_track(). We'll make a copy of name, though
+ * so that needs to be freed by the caller.
+ */
+static void add_track(GtkListStore *store, sp_track *track, const char *name)
 {
 	GtkTreeIter iter;
 	struct item *item;
 
-	if ((item = item_init_track(track)) == NULL) {
+	if ((item = item_init_track(track, name)) == NULL) {
 		fprintf(stderr, "%s(): %s\n",
 			__func__, strerror(errno));
 		return;
@@ -572,7 +576,7 @@ static void add_track(GtkListStore *store, sp_track *track)
 	gtk_list_store_append(store, &iter);
 	gtk_list_store_set(store, &iter,
 			   0, item,
-			   1, sp_track_name(track),
+			   1, name,
 			   -1);
 }
 
@@ -580,7 +584,10 @@ static void playlist_expand_into(GtkListStore *store, sp_playlist *pl)
 {
 	int i;
 	for (i = 0; i < sp_playlist_num_tracks(pl); i++) {
-		add_track(store, sp_playlist_track(pl, i));
+		sp_track *track = sp_playlist_track(pl, i);
+		char *name = strdup(sp_track_name(track));
+		add_track(store, track, name);
+		free(name);
 	}
 }
 
@@ -590,8 +597,16 @@ static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userda
 	int i;
 
 	printf("%s(): store=%p\n", __func__, browse->store);
+
+	/* FIXME: this needs to release spthui_lock() and
+	 * take gdk lock and spthui_lock() again, as add_track() needs
+	 * the gdk lock. Problem is, we don't have struct spthui here,
+	 * as struct albumbrowse knows nothing of such things.
+	 * Fortunately gdk seems to survive for now.
+	 */
 	for (i = 0; i < sp_albumbrowse_num_tracks(sp_browse); i++) {
-		add_track(browse->store, sp_albumbrowse_track(sp_browse, i));
+		sp_track *track = sp_albumbrowse_track(sp_browse, i);
+		add_track(browse->store, track, sp_track_name(track));
 	}
 
 	sp_albumbrowse_release(sp_browse);
@@ -634,6 +649,7 @@ static void setup_selection_tracker(GtkTreeView *view, struct spthui *spthui)
 }
 
 
+/* Called with both GDK and spthui_lock() held. */
 static void expand_album(struct spthui *spthui, sp_album *album)
 {
 
@@ -663,6 +679,7 @@ static void expand_album(struct spthui *spthui, sp_album *album)
 	fprintf(stderr, "%s(): spthui=%p view=%p album=%p\n", __func__, spthui, view, album);
 }
 
+/* Called with both GDK and spthui_lock() held. */
 static void expand_playlist(struct spthui *spthui, struct item *item)
 {
 	GtkTreeView *view;
@@ -951,11 +968,16 @@ static void search_complete(sp_search *sp_search, void *userdata)
 	struct search *search = userdata;
 	int i;
 
-	gdk_threads_enter();
+	/* FIXME: this needs to release spthui_lock() and
+	 * take gdk lock and spthui_lock() again, as add_track() needs
+	 * the gdk lock. Problem is, we don't have struct spthui here,
+	 * as struct albumbrowse knows nothing of such things.
+	 * Fortunately gdk seems to survive for now.
+	 */
 	for (i = 0; i < sp_search_num_tracks(sp_search); i++) {
-		add_track(search->store, sp_search_track(sp_search, i));
+		sp_track *track = sp_search_track(sp_search, i);
+		add_track(search->store, track, sp_track_name(track));
 	}
-	gdk_threads_leave();
 }
 
 static void init_search(GtkEntry *query, void *user_data)

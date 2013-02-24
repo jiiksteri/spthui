@@ -18,7 +18,7 @@ enum item_type {
 struct item;
 
 struct item *item_init_playlist(sp_playlist *pl, const char *name);
-struct item *item_init_track(sp_track *track);
+struct item *item_init_track(sp_track *track, const char *name);
 struct item *item_init_none(void);
 struct item *item_init_search(struct search *search);
 struct item *item_init_artist(sp_artist *artist);
