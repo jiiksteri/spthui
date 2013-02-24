@@ -325,11 +325,6 @@ static void do_add_playlists(sp_playlistcontainer *playlists, void *userdata)
 	n = sp_playlistcontainer_num_playlists(playlists);
 	fprintf(stderr, "%s(): %d playlists\n", __func__, n);
 
-	/* FIXME: Is this needed? We eventually *_add_ref() the
-	 * contained playlists, via item_parse(). We don't
-	 * do much with the container.. */
-	sp_playlistcontainer_add_ref(playlists);
-
 	for (i = 0; i < n; i++) {
 		pl = sp_playlistcontainer_playlist(playlists, i);
 		sp_playlist_add_callbacks(pl, &pl_callbacks, spthui);
@@ -345,7 +340,7 @@ static void add_playlists(struct spthui *spthui, sp_session *session)
 	sp_playlistcontainer *playlists;
 
 	playlists = sp_session_playlistcontainer(session);
-	//do_add_playlists(playlists, spthui);
+	do_add_playlists(playlists, spthui);
 	sp_playlistcontainer_add_callbacks(playlists, &root_pl_container_cb, spthui);
 }
 
