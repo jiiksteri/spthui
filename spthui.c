@@ -84,11 +84,14 @@ static int spthui_unlock(struct spthui *spthui)
 	return pthread_mutex_unlock(&spthui->lock);
 }
 
+enum {
+	COLUMN_OBJECT,
+	COLUMN_NAME,
+};
 
-/* wants more columns, obviously */
 static GType list_columns[] = {
-	G_TYPE_POINTER, /* item itself */
-	G_TYPE_STRING,  /* item name */
+	[COLUMN_OBJECT] = G_TYPE_POINTER, /* item itself */
+	[COLUMN_NAME] = G_TYPE_STRING,  /* item name */
 };
 
 
@@ -104,8 +107,8 @@ static gboolean view_get_selected(GtkTreeView *view, struct item **item, char **
 
 	if (have_selected) {
 		gtk_tree_model_get(model, &iter,
-				   0, item,
-				   1, name,
+				   COLUMN_OBJECT, item,
+				   COLUMN_NAME, name,
 				   -1);
 	}
 	return have_selected;
@@ -157,7 +160,7 @@ static GtkTreeView *spthui_list_new(struct spthui *spthui)
 
 	column = gtk_tree_view_column_new_with_attributes("Item",
 							  gtk_cell_renderer_text_new(),
-							  "text", 1,
+							  "text", COLUMN_NAME,
 							  NULL);
 	gtk_tree_view_append_column(view, column);
 
@@ -294,8 +297,8 @@ static gboolean add_pl_or_name(struct pl_find_ctx *ctx)
 	}
 
 	gtk_list_store_set(store, &ctx->iter,
-			   0, ctx->found,
-			   1, ctx->name,
+			   COLUMN_OBJECT, ctx->found,
+			   COLUMN_NAME, ctx->name,
 			   -1);
 
 	pl_find_context_destroy(ctx);
@@ -732,8 +735,8 @@ static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, voi
 		if (view_get_iter_at_pos(GTK_TREE_VIEW(widget), event, &iter)) {
 			model = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
 			gtk_tree_model_get(model, &iter,
-					   0, &item,
-					   1, &name,
+					   COLUMN_OBJECT, &item,
+					   COLUMN_NAME, &name,
 					   -1);
 			popup_show(item, name, event->button, event->time,
 				   expand_item, spthui);
