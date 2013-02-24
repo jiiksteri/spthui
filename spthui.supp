@@ -1,0 +1,84 @@
+#
+# valgrind suppression entries for known "leaks"
+#
+# These are various one-shot gtk initialization functions with a
+# a sp_session_create() suppression, as it initializes some global
+# data that can't be removed.
+#
+{
+   GTK global initialization
+   Memcheck:Leak
+   ...
+   fun:gtk_init
+   fun:main
+}
+{
+   libspotify session creation global data
+   Memcheck:Leak
+   ...
+   fun:sp_session_create
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   ...
+   fun:g_type_add_interface_static
+   ...
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+...
+   fun:setup_login_dialog
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:malloc
+...
+   fun:setup_tabs
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:calloc
+...
+   fun:setup_tabs
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:malloc
+...
+   fun:_snd_pcm_empty_open
+...
+   fun:audio_init
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:calloc
+...
+   fun:setup_playback_controls
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+...
+   fun:gtk_widget_show
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+...
+   fun:g_type_register_static
+...
+}

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+suppression_file=spthui.supp
+
+ G_SLICE=always-malloc G_DEBUG=gc-friendly,resident-modules valgrind \
+     --leak-check=full \
+     --track-origins=yes \
+     --suppressions=$suppression_file \
+     --log-file=valgrind.log \
+     --gen-suppressions=all \
+     --num-callers=40 \
+     ./spthui "$@"
