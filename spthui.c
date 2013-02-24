@@ -234,7 +234,19 @@ struct pl_find_ctx {
 	sp_playlist *needle;
 	struct item *found;
 	GtkTreeIter iter;
+
+	struct tabs *tabs;
+	int tab_ind;
+
+	char *name;
 };
+
+static void pl_find_context_destroy(struct pl_find_ctx *ctx)
+{
+	free(ctx->name);
+	free(ctx);
+}
+
 
 static gboolean pl_find_foreach(GtkTreeModel *model,
 				GtkTreePath *path,
@@ -260,48 +272,48 @@ static gboolean pl_find_foreach(GtkTreeModel *model,
 	return ctx->found != NULL;
 }
 
-
-static void add_pl_or_name(GtkTreeView *list, sp_playlist *pl,
-			   const char *name)
+static gboolean add_pl_or_name(struct pl_find_ctx *ctx)
 {
 	GtkListStore *store;
-	struct pl_find_ctx ctx = {
-		.found = NULL,
-		.needle = pl,
-	};
+	GtkTreeView *view;
 
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(list));
+	view = tab_get(ctx->tabs, ctx->tab_ind);
+	store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
 
-	gtk_tree_model_foreach(GTK_TREE_MODEL(store), pl_find_foreach, &ctx);
+	gtk_tree_model_foreach(GTK_TREE_MODEL(store), pl_find_foreach, ctx);
 
-	if (ctx.found == NULL) {
-		if ((ctx.found = item_init_playlist(pl, name)) == NULL) {
+	if (ctx->found == NULL) {
+		if ((ctx->found = item_init_playlist(ctx->needle, ctx->name)) == NULL) {
 			fprintf(stderr, "%s(): %s\n",
 				__func__, strerror(errno));
-			return;
+			pl_find_context_destroy(ctx);
+			return FALSE;
 		}
-		gtk_list_store_append(store, &ctx.iter);
+		gtk_list_store_append(store, &ctx->iter);
 	}
 
-	gtk_list_store_set(store, &ctx.iter,
-			   0, ctx.found,
-			   1, name,
+	gtk_list_store_set(store, &ctx->iter,
+			   0, ctx->found,
+			   1, ctx->name,
 			   -1);
+
+	pl_find_context_destroy(ctx);
+	return FALSE;
 }
 
 static void pl_fill_name(sp_playlist *pl, void *userdata)
 {
 	struct spthui *spthui = userdata;
+	struct pl_find_ctx *ctx;
 
 	if (sp_playlist_is_loaded(pl)) {
-		char *name = strdup(sp_playlist_name(pl));
-		spthui_unlock(spthui);
-		gdk_threads_enter();
-		add_pl_or_name(tab_get(spthui->tabs, 0), pl, name);
-		gdk_threads_leave();
-		free(name);
-		spthui_lock(spthui);
-
+		ctx = malloc(sizeof(*ctx));
+		memset(ctx, 0, sizeof(*ctx));
+		ctx->needle = pl;
+		ctx->name = strdup(sp_playlist_name(pl));
+		ctx->tabs = spthui->tabs;
+		ctx->tab_ind = 0;
+		gdk_threads_add_idle((GSourceFunc)add_pl_or_name, ctx);
 	}
 }
 
