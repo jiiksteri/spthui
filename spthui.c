@@ -67,6 +67,7 @@ struct spthui {
 
 	pthread_t spotify_worker;
 	int notified;
+	int loading;
 
 	struct audio *audio;
 };
@@ -460,7 +461,22 @@ static void start_playback(sp_session *session)
 static void stop_playback(sp_session *session)
 {
 	struct spthui *spthui = sp_session_userdata(session);
-	audio_stop_playback(spthui->audio);
+
+	/* What's with the whole spthui->loading business?
+	 * Well, when we get ->end_of_track() and navigate to
+	 * the next song, we do sp_session_player_load() for
+	 * the next track. That ends up calling ->stop_playback().
+	 *
+	 * I can see how not propagating that would lead to all
+	 * kinds of funny buffer underruns and things, but for my
+	 * currently it seems unnecessary.
+	 *
+	 * So set a flag for when we're loading and check it here.
+	 * see spthui_player_load()
+	 */
+	if (spthui->loading == 0) {
+		audio_stop_playback(spthui->audio);
+	}
 }
 
 static void get_audio_buffer_stats(sp_session *session, sp_audio_buffer_stats *stats)
@@ -471,6 +487,17 @@ static void get_audio_buffer_stats(sp_session *session, sp_audio_buffer_stats *s
 
 }
 
+static sp_error spthui_player_load(struct spthui *spthui, sp_track *track)
+{
+	sp_error err;
+
+	spthui->loading = 1;
+	err = sp_session_player_load(spthui->sp_session, track);
+	spthui->loading = 0;
+
+	return err;
+}
+
 /* Called with the GDK lock held. Will take spthui_lock(). */
 static void track_play(struct spthui *spthui, sp_track *track)
 {
@@ -479,7 +506,7 @@ static void track_play(struct spthui *spthui, sp_track *track)
 	spthui_lock(spthui);
 
 	if (track != NULL) {
-		err = sp_session_player_load(spthui->sp_session, track);
+		err = spthui_player_load(spthui, track);
 		if (err != SP_ERROR_OK) {
 			fprintf(stderr, "%s(): %s failed to load: %s\n",
 				__func__, sp_track_name(track), sp_error_message(err));
@@ -928,7 +955,7 @@ static void playback_toggle_clicked(struct playback_panel *panel, void *user_dat
 			}
 			track = item_track(item);
 			if (spthui->current_track != track) {
-				sp_session_player_load(spthui->sp_session, track);
+				spthui_player_load(spthui, track);
 				spthui->current_track = track;
 			}
 		}
