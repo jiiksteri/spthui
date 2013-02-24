@@ -553,18 +553,20 @@ static void play_current(struct spthui *spthui)
 }
 
 
+static gboolean navigate_next_and_play(struct spthui *spthui)
+{
+	if (view_navigate_next(spthui->current_view)) {
+		play_current(spthui);
+	}
+
+	return FALSE;
+}
+
 
 static void end_of_track(sp_session *session)
 {
 	struct spthui *spthui = sp_session_userdata(session);
-
-	spthui_unlock(spthui);
-	gdk_threads_enter();
-	if (view_navigate_next(spthui->current_view)) {
-		play_current(spthui);
-	}
-	gdk_threads_leave();
-	spthui_lock(spthui);
+	gdk_threads_add_idle((GSourceFunc)navigate_next_and_play, spthui);
 }
 
 static sp_session_callbacks cb = {
