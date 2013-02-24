@@ -70,6 +70,8 @@ struct spthui {
 	int loading;
 
 	struct audio *audio;
+
+	const char *login_error;
 };
 
 #define spthui_lock(s) pthread_mutex_lock(&(s)->lock)
@@ -357,37 +359,30 @@ static void add_playlists(struct spthui *spthui, sp_session *session)
 	sp_playlistcontainer_add_callbacks(playlists, &root_pl_container_cb, spthui);
 }
 
+static gboolean ui_handle_login_result(struct spthui *spthui)
+{
+	if (spthui->login_error == NULL) {
+		login_dialog_hide(spthui->login_dialog);
+		gtk_widget_show_all(GTK_WIDGET(spthui->main_window));
+	} else {
+		login_dialog_error(spthui->login_dialog, spthui->login_error);
+	}
+	return FALSE;
+}
 
 static void logged_in(sp_session *session, sp_error error)
 {
 	struct spthui *spthui = sp_session_userdata(session);
-	const char *error_msg;
 
 	fprintf(stderr, "%s(): %p %d\n", __func__, session, error);
 	if (error == SP_ERROR_OK) {
 		add_playlists(spthui, session);
+		spthui->login_error = NULL;
 	} else {
-		error_msg = sp_error_message(error);
+		spthui->login_error = sp_error_message(error);
 	}
 
-	/* With the spotify stuff done, swap the lock for
-	 * the gtk one. */
-	spthui_unlock(spthui);
-	gdk_threads_enter();
-
-	if (error == SP_ERROR_OK) {
-		login_dialog_hide(spthui->login_dialog);
-		gtk_widget_show_all(GTK_WIDGET(spthui->main_window));
-	} else {
-		login_dialog_error(spthui->login_dialog, error_msg);
-	}
-
-	gdk_threads_leave();
-
-	/* we're called by process_events() which expects
-	 * spthui->lock held */
-	spthui_lock(spthui);
-
+	gdk_threads_add_idle((GSourceFunc)ui_handle_login_result, spthui);
 }
 
 static void logged_out(sp_session *session)
