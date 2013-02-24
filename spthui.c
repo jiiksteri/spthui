@@ -527,7 +527,7 @@ static void track_play(struct spthui *spthui, sp_track *track)
 			track != NULL ? "start" : "stop",
 			sp_error_message(err));
 	} else {
-		spthui->playing = 1;
+		spthui->playing = track != NULL;
 		ui_update_playing(spthui);
 	}
 
@@ -541,8 +541,12 @@ static void play_current(struct spthui *spthui)
 	char *name;
 
 	if (view_get_selected(spthui->current_view, &item, &name)) {
-		spthui->current_track = item_track(item);
-		track_play(spthui, item_track(item));
+		if (item_type(item) == ITEM_TRACK) {
+			spthui->current_track = item_track(item);
+		} else {
+			spthui->current_track = NULL;
+		}
+		track_play(spthui, spthui->current_track);
 	}
 }
 
