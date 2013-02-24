@@ -869,12 +869,13 @@ static void close_selected_tab(struct tabs *tabs, int current, void *userdata)
 		if (tab_get(spthui->tabs, current) == spthui->current_view &&
 		    spthui->playing) {
 
-			/* XXX: Needs locking against spotify threads. */
+			spthui_lock(spthui);
 			spthui->current_track = NULL;
 			spthui->current_view = NULL;
 			sp_session_player_play(spthui->sp_session, 0);
 			spthui->playing = 0;
 			ui_update_playing(spthui);
+			spthui_unlock(spthui);
 		}
 
 		tabs_remove(spthui->tabs, current);
@@ -943,6 +944,8 @@ static void playback_toggle_clicked(struct playback_panel *panel, void *user_dat
 	sp_track *track;
 	char *name;
 
+	spthui_lock(spthui);
+
 	if (!spthui->playing) {
 
 		if (spthui->current_view == NULL) {
@@ -964,6 +967,8 @@ static void playback_toggle_clicked(struct playback_panel *panel, void *user_dat
 	sp_session_player_play(spthui->sp_session, !spthui->playing);
 	spthui->playing = !spthui->playing;
 	ui_update_playing(spthui);
+
+	spthui_unlock(spthui);
 }
 
 static sp_error spthui_seek(struct playback_panel *panel, int target_ms, void *user_data)
