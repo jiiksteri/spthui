@@ -79,6 +79,62 @@ static gboolean progress_clicked_trampoline(GtkWidget *widget,
 	return progress_clicked(GTK_WIDGET(panel->track_info), event, user_data);
 }
 
+static inline int mouse_offset_hms(GdkWindow *win, int x,
+				   sp_track *track,
+				   int *hours, int *minutes, int *seconds)
+{
+	int millis;
+
+	if (track == NULL || (millis = sp_track_duration(track)) == 0) {
+		return -1;
+	}
+
+	millis = x * millis / gdk_window_get_width(win);
+
+	*seconds = millis / 1000;
+
+	*minutes = *seconds / 60;
+	*seconds -= *minutes * 60;
+
+	*hours = *minutes / 60;
+	*minutes -= *hours * 60;
+
+	return millis;
+}
+
+static gboolean progress_query_tooltip(GtkWidget *widget,
+				       int x, int y,
+				       gboolean keyboard_mode,
+				       GtkTooltip *tooltip,
+				       gpointer user_data)
+{
+	/* 000:00:00 */
+	char tip[16];
+	struct playback_panel *panel = user_data;
+	int millis, hours, minutes, seconds;
+
+	millis = mouse_offset_hms(gtk_widget_get_window(widget), x,
+				  panel->track,
+				  &hours, &minutes, &seconds);
+
+	if (millis < 0) {
+		return FALSE;
+	}
+
+	if (hours > 0) {
+		snprintf(tip, sizeof(tip), "%02d:%02d:%02d",
+			 hours, minutes, seconds);
+	} else {
+		snprintf(tip, sizeof(tip), "%02d:%02d",
+			 minutes, seconds);
+	}
+
+	gtk_tooltip_set_text(tooltip, tip);
+
+	return TRUE;
+}
+
+
 struct playback_panel *playback_panel_init(struct playback_panel_ops *ops,
 					   void *cb_data)
 {
@@ -103,6 +159,10 @@ struct playback_panel *playback_panel_init(struct playback_panel_ops *ops,
 	panel->track_info = GTK_PROGRESS_BAR(gtk_progress_bar_new());
 	g_object_set(panel->track_info, "show-text", TRUE, NULL);
 	gtk_progress_bar_set_text(panel->track_info, "Not playing");
+
+	gtk_widget_set_has_tooltip(GTK_WIDGET(panel->track_info), TRUE);
+	g_signal_connect(GTK_WIDGET(panel->track_info), "query-tooltip",
+			 G_CALLBACK(progress_query_tooltip), panel);
 
 	if (gtk_widget_get_has_window(GTK_WIDGET(panel->track_info))) {
 		/* progress bar has a backing window. This is the
