@@ -923,6 +923,7 @@ static void playback_toggle_clicked(struct playback_panel *panel, void *user_dat
 
 		if (view_get_selected(spthui->current_view, &item, &name)) {
 			if (item_type(item) != ITEM_TRACK) {
+				spthui_unlock(spthui);
 				return;
 			}
 			track = item_track(item);
