@@ -27,10 +27,10 @@ static struct item *item_init(enum item_type type, void *p, const char *name)
 	return item;
 }
 
-struct item *item_init_playlist(sp_playlist *pl)
+struct item *item_init_playlist(sp_playlist *pl, const char *name)
 {
 	sp_playlist_add_ref(pl);
-	return item_init(ITEM_PLAYLIST, pl, sp_playlist_name(pl));
+	return item_init(ITEM_PLAYLIST, pl, name);
 }
 
 struct item *item_init_track(sp_track *track)

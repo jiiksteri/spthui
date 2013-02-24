@@ -274,7 +274,7 @@ static void add_pl_or_name(GtkTreeView *list, sp_playlist *pl,
 	gtk_tree_model_foreach(GTK_TREE_MODEL(store), pl_find_foreach, &ctx);
 
 	if (ctx.found == NULL) {
-		if ((ctx.found = item_init_playlist(pl)) == NULL) {
+		if ((ctx.found = item_init_playlist(pl, name)) == NULL) {
 			fprintf(stderr, "%s(): %s\n",
 				__func__, strerror(errno));
 			return;

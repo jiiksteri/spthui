@@ -95,9 +95,10 @@ static void add_item_album(struct popup *popup, sp_album *album)
 	add_item(popup, item_init_album(album), "Album: %s", sp_album_name(album));
 }
 
-static void add_item_playlist_expand(struct popup *popup, sp_playlist *pl)
+static void add_item_playlist_expand(struct popup *popup, sp_playlist *pl,
+				     const char *name)
 {
-	add_item(popup, item_init_playlist(pl), "Expand playlist");
+	add_item(popup, item_init_playlist(pl, name), "Expand playlist");
 }
 
 static void setup_menu_for_item(struct popup *popup,
@@ -110,7 +111,7 @@ static void setup_menu_for_item(struct popup *popup,
 	case ITEM_ALBUM:
 
 	case ITEM_PLAYLIST:
-		add_item_playlist_expand(popup, item_playlist(item));
+		add_item_playlist_expand(popup, item_playlist(item), item_name(item));
 		break;
 
 	case ITEM_ALBUMBROWSE:
