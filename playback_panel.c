@@ -285,8 +285,9 @@ void playback_panel_set_info(struct playback_panel *panel,
 			gtk_progress_bar_set_fraction(panel->track_info, 0.0);
 		}
 	} else {
-		panel->position = 0;
+		panel->position = panel->duration = 0;
 		name = NULL;
+		gtk_progress_bar_set_fraction(panel->track_info, 0.0);
 	}
 
 	gtk_progress_bar_set_text(panel->track_info, name);
