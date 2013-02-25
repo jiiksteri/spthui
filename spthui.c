@@ -452,11 +452,40 @@ static int music_delivery(sp_session *session,
 
 }
 
+static char *make_win_title(char *buf, size_t sz, sp_track *track)
+{
+	int ind;
+
+	ind = snprintf(buf, sz, "%s - %s",
+		       sp_artist_name(sp_track_artist(track, 0)),
+		       sp_track_name(track));
+
+	if (ind >= sz - 1 - strlen(" - spthui")) {
+		sprintf(buf + sz - 1 - strlen("... - spthui"),
+			"... - spthui");
+	} else {
+		sprintf(buf + ind, " - spthui");
+	}
+
+	return buf;
+}
+
 /* Needs to be called with both gdk lock and spthui_lock() held. */
 static void ui_update_playing(struct spthui *spthui)
 {
+	char buf[128];
+	char *title;
+
 	playback_panel_set_info(spthui->playback_panel,
 				spthui->current_track, spthui->playing);
+
+	if (spthui->current_track != NULL) {
+		title = make_win_title(buf, sizeof(buf), spthui->current_track);
+	} else {
+		title = "spthui";
+	}
+
+	gtk_window_set_title(spthui->main_window, title);
 }
 
 static void start_playback(sp_session *session)
