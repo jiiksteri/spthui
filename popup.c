@@ -28,21 +28,19 @@ static void popup_item_activate(GtkWidget *widget, GdkEventButton *event, struct
 	pitem->popup->selection_cb(pitem->item, pitem->popup->cb_data);
 }
 
-static char *setup_label(const char *fmt, va_list ap)
+static size_t setup_label(char **label, size_t sz, const char *fmt, va_list ap)
 {
-	int sz = 32;
-	int needed;
-	char *label;
+	size_t needed;
 
-	label = malloc(sz);
-	needed = vsnprintf(label, sz, fmt, ap);
+	*label = realloc(*label, sz);
+	needed = vsnprintf(*label, sz-1, fmt, ap);
 	if (needed >= sz) {
-		label = realloc(label, needed+1);
-		vsnprintf(label, needed+1, fmt, ap);
+		return needed;
 	}
-
-	return label;
+	(*label)[sz-1] = '\0';
+	return 0;
 }
+
 
 __attribute__((format(printf,3,4)))
 static void add_item(struct popup *popup, struct item *item,
@@ -50,6 +48,7 @@ static void add_item(struct popup *popup, struct item *item,
 {
 	struct popup_item *pitem;
 	GtkWidget *menu_item;
+	size_t needed;
 	va_list ap;
 
 	pitem = malloc(sizeof(*pitem));
@@ -60,9 +59,13 @@ static void add_item(struct popup *popup, struct item *item,
 	pitem->item = item;
 	pitem->next = NULL;
 
-	va_start(ap, name_fmt);
-	pitem->name = setup_label(name_fmt, ap);
-	va_end(ap);
+	needed = 32;
+	pitem->name = NULL;
+	do {
+		va_start(ap, name_fmt);
+		needed = setup_label(&pitem->name, needed+1, name_fmt, ap);
+		va_end(ap);
+	} while (needed > 0);
 
 	if (popup->item_tail != NULL) {
 		popup->item_tail->next = pitem;
