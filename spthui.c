@@ -95,7 +95,7 @@ static GType list_columns[] = {
 };
 
 
-static gboolean view_get_selected(GtkTreeView *view, struct item **item, char **name)
+static gboolean view_get_selected(GtkTreeView *view, struct item **item)
 {
 	GtkTreeModel *model;
 	GtkTreeIter iter;
@@ -106,11 +106,9 @@ static gboolean view_get_selected(GtkTreeView *view, struct item **item, char **
 	have_selected = gtk_tree_selection_get_selected(selection, &model, &iter);
 
 	if (have_selected) {
-		gtk_tree_model_get(model, &iter,
-				   COLUMN_OBJECT, item,
-				   COLUMN_NAME, name,
-				   -1);
+		gtk_tree_model_get(model, &iter, COLUMN_OBJECT, item, -1);
 	}
+
 	return have_selected;
 }
 
@@ -541,9 +539,8 @@ static void track_play(struct spthui *spthui, sp_track *track)
 static void play_current(struct spthui *spthui)
 {
 	struct item *item;
-	char *name;
 
-	if (view_get_selected(spthui->current_view, &item, &name)) {
+	if (view_get_selected(spthui->current_view, &item)) {
 		if (item_type(item) == ITEM_TRACK) {
 			spthui->current_track = item_track(item);
 		} else {
@@ -764,10 +761,9 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 				void *userdata)
 {
 	struct spthui *spthui = userdata;
-	char *name;
 	struct item *item;
 
-	if (!view_get_selected(view, &item, &name)) {
+	if (!view_get_selected(view, &item)) {
 		/* We're an activation callback, so how could
 		 * this happen?
 		 */
@@ -928,11 +924,10 @@ static void next_clicked(struct playback_panel *panel, void *user_data)
 static inline int current_is_playable(struct spthui *spthui)
 {
 	struct item *item;
-	char *name;
 
 	return
 		spthui->current_view != NULL &&
-		view_get_selected(spthui->current_view, &item, &name) &&
+		view_get_selected(spthui->current_view, &item) &&
 		item_type(item) == ITEM_TRACK;
 }
 
@@ -941,7 +936,6 @@ static void playback_toggle_clicked(struct playback_panel *panel, void *user_dat
 	struct spthui *spthui = user_data;
 	struct item *item;
 	sp_track *track;
-	char *name;
 
 	spthui_lock(spthui);
 
@@ -951,7 +945,7 @@ static void playback_toggle_clicked(struct playback_panel *panel, void *user_dat
 			spthui->current_view = spthui->selected_view;
 		}
 
-		if (view_get_selected(spthui->current_view, &item, &name)) {
+		if (view_get_selected(spthui->current_view, &item)) {
 			if (item_type(item) != ITEM_TRACK) {
 				spthui_unlock(spthui);
 				return;
