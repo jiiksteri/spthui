@@ -2,6 +2,7 @@
 #include "popup.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <gtk/gtk.h>
 
@@ -101,7 +102,7 @@ static void add_item_album(struct popup *popup, sp_album *album)
 static void add_item_playlist_expand(struct popup *popup, sp_playlist *pl,
 				     const char *name)
 {
-	add_item(popup, item_init_playlist(pl, name), "Expand playlist");
+	add_item(popup, item_init_playlist(pl, strdup(name)), "Expand playlist");
 }
 
 static void setup_menu_for_item(struct popup *popup,

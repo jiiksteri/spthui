@@ -17,13 +17,23 @@ enum item_type {
 
 struct item;
 
-struct item *item_init_playlist(sp_playlist *pl, const char *name);
-struct item *item_init_track(sp_track *track, const char *name);
+/*
+ * All the item_init_*() variants that take a "name" parameter will not
+ * copy name, but instead store a reference, _and_ free it at item_free().
+ * That is to say they assume ownership of the name passed in.
+ *
+ * This asymmetry is convenient, as a lot of callers construct the name
+ * dynamically just for the item and they'd just have to free it right
+ * after while we'd do a useless copy.
+ */
+
+struct item *item_init_playlist(sp_playlist *pl, char *name);
+struct item *item_init_track(sp_track *track, char *name);
 struct item *item_init_none(void);
 struct item *item_init_search(struct search *search);
 struct item *item_init_artist(sp_artist *artist);
 struct item *item_init_album(sp_album *album);
-struct item *item_init_albumbrowse(struct albumbrowse *browse, const char *name);
+struct item *item_init_albumbrowse(struct albumbrowse *browse, char *name);
 
 void item_free(struct item *item);
 

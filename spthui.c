@@ -287,7 +287,7 @@ static gboolean add_pl_or_name(struct pl_find_ctx *ctx)
 	gtk_tree_model_foreach(GTK_TREE_MODEL(store), pl_find_foreach, ctx);
 
 	if (ctx->found == NULL) {
-		if ((ctx->found = item_init_playlist(ctx->needle, ctx->name)) == NULL) {
+		if ((ctx->found = item_init_playlist(ctx->needle, strdup(ctx->name))) == NULL) {
 			fprintf(stderr, "%s(): %s\n",
 				__func__, strerror(errno));
 			pl_find_context_destroy(ctx);
@@ -604,10 +604,9 @@ static sp_error join_worker(struct spthui *spthui)
 }
 
 /* NOTE: must be called with gdk lock held and track pinned so we can
- * _add_ref() it in item_init_track(). We'll make a copy of name, though
- * so that needs to be freed by the caller.
+ * _add_ref() it in item_init_track().
  */
-static void add_track(GtkListStore *store, sp_track *track, const char *name)
+static void add_track(GtkListStore *store, sp_track *track, char *name)
 {
 	GtkTreeIter iter;
 	struct item *item;
@@ -630,9 +629,7 @@ static void playlist_expand_into(GtkListStore *store, sp_playlist *pl)
 	int i;
 	for (i = 0; i < sp_playlist_num_tracks(pl); i++) {
 		sp_track *track = sp_playlist_track(pl, i);
-		char *name = strdup(sp_track_name(track));
-		add_track(store, track, name);
-		free(name);
+		add_track(store, track, strdup(sp_track_name(track)));
 	}
 }
 
@@ -665,9 +662,7 @@ static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userda
 	 */
 	for (i = 0; i < sp_albumbrowse_num_tracks(sp_browse); i++) {
 		sp_track *track = sp_albumbrowse_track(sp_browse, i);
-		char *name = name_with_index(track);
-		add_track(browse->store, track, name);
-		free(name);
+		add_track(browse->store, track, name_with_index(track));
 	}
 
 	sp_albumbrowse_release(sp_browse);
@@ -692,7 +687,7 @@ static void expand_album(struct spthui *spthui, sp_album *album)
 					       expand_album_browse_complete,
 					       browse);
 
-	item = item_init_albumbrowse(browse, sp_album_name(album));
+	item = item_init_albumbrowse(browse, strdup(sp_album_name(album)));
 
 	view = spthui_list_new(spthui);
 	tab_add(spthui->tabs, view, item_name(item), item);
@@ -1036,9 +1031,7 @@ static void search_complete(sp_search *sp_search, void *userdata)
 	 */
 	for (i = 0; i < sp_search_num_tracks(sp_search); i++) {
 		sp_track *track = sp_search_track(sp_search, i);
-		char *name = artist_album_track(track);
-		add_track(search->store, track, name);
-		free(name);
+		add_track(search->store, track, artist_album_track(track));
 	}
 }
 

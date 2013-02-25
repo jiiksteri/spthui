@@ -14,26 +14,26 @@ struct item {
 	char *name;
 };
 
-static struct item *item_init(enum item_type type, void *p, const char *name)
+static struct item *item_init(enum item_type type, void *p, char *name)
 {
 	struct item *item;
 
 	if ((item = malloc(sizeof(*item))) != NULL) {
 		item->type = type;
 		item->item = p;
-		item->name = strdup(name);
+		item->name = name;
 	}
 
 	return item;
 }
 
-struct item *item_init_playlist(sp_playlist *pl, const char *name)
+struct item *item_init_playlist(sp_playlist *pl, char *name)
 {
 	sp_playlist_add_ref(pl);
 	return item_init(ITEM_PLAYLIST, pl, name);
 }
 
-struct item *item_init_track(sp_track *track, const char *name)
+struct item *item_init_track(sp_track *track, char *name)
 {
 	sp_track_add_ref(track);
 	return item_init(ITEM_TRACK, track, name);
@@ -41,28 +41,28 @@ struct item *item_init_track(sp_track *track, const char *name)
 
 struct item *item_init_none(void)
 {
-	return item_init(ITEM_NONE, NULL, "NONE");
+	return item_init(ITEM_NONE, NULL, strdup("NONE"));
 }
 
 struct item *item_init_search(struct search *search)
 {
 	sp_search_add_ref(search->search);
-	return item_init(ITEM_SEARCH, search, sp_search_query(search->search));
+	return item_init(ITEM_SEARCH, search, strdup(sp_search_query(search->search)));
 }
 
 struct item *item_init_artist(sp_artist *artist)
 {
 	sp_artist_add_ref(artist);
-	return item_init(ITEM_ARTIST, artist, sp_artist_name(artist));
+	return item_init(ITEM_ARTIST, artist, strdup(sp_artist_name(artist)));
 }
 
 struct item *item_init_album(sp_album *album)
 {
 	sp_album_add_ref(album);
-	return item_init(ITEM_ALBUM, album, sp_album_name(album));
+	return item_init(ITEM_ALBUM, album, strdup(sp_album_name(album)));
 }
 
-struct item *item_init_albumbrowse(struct albumbrowse *browse, const char *name)
+struct item *item_init_albumbrowse(struct albumbrowse *browse, char *name)
 {
 	sp_albumbrowse_add_ref(browse->browse);
 	/* cannot use sp_album_name(sp_albumbrowse_album()),
