@@ -253,16 +253,31 @@ static gboolean update_progress(struct playback_panel *panel)
 	return TRUE;
 }
 
+static char *track_name_full(sp_track *track)
+{
+	char *buf;
+	const char *artist, *name;
+	int sz;
+
+	artist = sp_artist_name(sp_track_artist(track, 0));
+	name = sp_track_name(track);
+	sz = strlen(artist) + 3 + strlen(name) + 1;
+	buf = malloc(sz);
+	snprintf(buf, sz, "%s - %s", artist, name);
+	buf[sz-1] = '\0';
+	return buf;
+}
+
 void playback_panel_set_info(struct playback_panel *panel,
 			     sp_track *track, int playing)
 {
 	const char *stock;
-	const char *name;
+	char *name;
 
 	stock = playing	? GTK_STOCK_MEDIA_PAUSE	: GTK_STOCK_MEDIA_PLAY;
 
 	if (track != NULL) {
-		name = sp_track_name(track);
+		name = track_name_full(track);
 		if (track != panel->track) {
 			panel->position = 0;
 			panel->track = track;
@@ -271,10 +286,11 @@ void playback_panel_set_info(struct playback_panel *panel,
 		}
 	} else {
 		panel->position = 0;
-		name = "<no track>";
+		name = NULL;
 	}
 
 	gtk_progress_bar_set_text(panel->track_info, name);
+	free(name);
 	gtk_button_set_label(panel->playback_toggle, stock);
 
 	if (playing) {

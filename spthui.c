@@ -636,6 +636,20 @@ static void playlist_expand_into(GtkListStore *store, sp_playlist *pl)
 	}
 }
 
+static char *name_with_index(sp_track *track)
+{
+	char *buf;
+	const char *orig;
+	int sz;
+
+	orig = sp_track_name(track);
+	sz = strlen(orig) + 4 + 1;
+	buf = malloc(sz);
+	snprintf(buf, sz, "%02d. %s", sp_track_index(track), orig);
+	buf[sz-1] = '\0';
+	return buf;
+}
+
 static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userdata)
 {
 	struct albumbrowse *browse = userdata;
@@ -651,7 +665,9 @@ static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userda
 	 */
 	for (i = 0; i < sp_albumbrowse_num_tracks(sp_browse); i++) {
 		sp_track *track = sp_albumbrowse_track(sp_browse, i);
-		add_track(browse->store, track, sp_track_name(track));
+		char *name = name_with_index(track);
+		add_track(browse->store, track, name);
+		free(name);
 	}
 
 	sp_albumbrowse_release(sp_browse);
