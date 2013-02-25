@@ -838,6 +838,7 @@ static int read_app_key(const void **bufp, size_t *sizep)
 		return err;
 	}
 
+	close(fd);
 	*bufp = tmp;
 	return 0;
 }
