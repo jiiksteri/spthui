@@ -1003,6 +1003,26 @@ static struct playback_panel_ops playback_panel_ops = {
 	.seek = spthui_seek,
 };
 
+static char *artist_album_track(sp_track *track)
+{
+	const char *artist, *album, *track_name;
+	char *name;
+	size_t sz;
+
+	artist = sp_artist_name(sp_track_artist(track, 0));
+	album = sp_album_name(sp_track_album(track));
+	track_name = sp_track_name(track);
+
+	sz = strlen(artist) + 3 + strlen(album) + 3 +
+		strlen(track_name) + 1;
+
+	name = malloc(sz);
+	snprintf(name, sz, "%s - %s - %s", artist, album, track_name);
+	name[sz-1] = '\0';
+
+	return name;
+}
+
 static void search_complete(sp_search *sp_search, void *userdata)
 {
 	struct search *search = userdata;
@@ -1016,7 +1036,9 @@ static void search_complete(sp_search *sp_search, void *userdata)
 	 */
 	for (i = 0; i < sp_search_num_tracks(sp_search); i++) {
 		sp_track *track = sp_search_track(sp_search, i);
-		add_track(search->store, track, sp_track_name(track));
+		char *name = artist_album_track(track);
+		add_track(search->store, track, name);
+		free(name);
 	}
 }
 
