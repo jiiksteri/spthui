@@ -1038,6 +1038,9 @@ static void init_search(GtkEntry *query, void *user_data)
 	}
 
 	search->name = strdup(gtk_entry_get_text(query));
+	view = spthui_list_new(spthui);
+	search->store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
+
 	search->search =
 		sp_search_create(spthui->sp_session,
 				 gtk_entry_get_text(query),
@@ -1058,10 +1061,7 @@ static void init_search(GtkEntry *query, void *user_data)
 			"%s(): %s\n", __func__, strerror(errno));
 	}
 
-	view = spthui_list_new(spthui);
 	tab_add(spthui->tabs, view, search->name, item);
-
-	search->store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
 }
 
 static void try_login_cb(const char *username, const char *password,
