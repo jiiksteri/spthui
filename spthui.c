@@ -879,14 +879,15 @@ static void close_selected_tab(struct tabs *tabs, int current, void *userdata)
 		 * and we have a track playing off it, stop playback
 		 * and clear ->current_{view,track}
 		 */
-		if (tab_get(spthui->tabs, current) == spthui->current_view &&
-		    spthui->playing) {
+		if (tab_get(spthui->tabs, current) == spthui->current_view) {
 
 			spthui_lock(spthui);
 			spthui->current_track = NULL;
 			spthui->current_view = NULL;
-			sp_session_player_play(spthui->sp_session, 0);
-			spthui->playing = 0;
+			if (spthui->playing) {
+				sp_session_player_play(spthui->sp_session, 0);
+				spthui->playing = 0;
+			}
 			ui_update_playing(spthui);
 			spthui_unlock(spthui);
 		}
