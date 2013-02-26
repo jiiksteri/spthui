@@ -278,10 +278,10 @@ void playback_panel_set_info(struct playback_panel *panel,
 
 	if (track != NULL) {
 		name = track_name_full(track);
+		panel->duration = sp_track_duration(track);
 		if (track != panel->track) {
 			panel->position = 0;
 			panel->track = track;
-			panel->duration = sp_track_duration(track);
 			gtk_progress_bar_set_fraction(panel->track_info, 0.0);
 		}
 	} else {
