@@ -28,8 +28,6 @@
 #include "albumbrowse.h"
 #include "tabs.h"
 
-#define SPTHUI_SEARCH_CHUNK 20
-
 enum spthui_state {
 	STATE_RUNNING,
 	STATE_DYING,
@@ -1023,43 +1021,6 @@ static struct playback_panel_ops playback_panel_ops = {
 	.seek = spthui_seek,
 };
 
-static char *artist_album_track(sp_track *track)
-{
-	const char *artist, *album, *track_name;
-	char *name;
-	size_t sz;
-
-	artist = sp_artist_name(sp_track_artist(track, 0));
-	album = sp_album_name(sp_track_album(track));
-	track_name = sp_track_name(track);
-
-	sz = strlen(artist) + 3 + strlen(album) + 3 +
-		strlen(track_name) + 1;
-
-	name = malloc(sz);
-	snprintf(name, sz, "%s - %s - %s", artist, album, track_name);
-	name[sz-1] = '\0';
-
-	return name;
-}
-
-static void search_complete(sp_search *sp_search, void *userdata)
-{
-	struct search *search = userdata;
-	int i;
-
-	/* FIXME: this needs to release spthui_lock() and
-	 * take gdk lock and spthui_lock() again, as add_track() needs
-	 * the gdk lock. Problem is, we don't have struct spthui here,
-	 * as struct albumbrowse knows nothing of such things.
-	 * Fortunately gdk seems to survive for now.
-	 */
-	for (i = 0; i < sp_search_num_tracks(sp_search); i++) {
-		sp_track *track = sp_search_track(sp_search, i);
-		add_track(search->store, track, artist_album_track(track));
-	}
-}
-
 static void init_search(GtkEntry *query, void *user_data)
 {
 	struct spthui *spthui = user_data;
@@ -1071,37 +1032,19 @@ static void init_search(GtkEntry *query, void *user_data)
 		return;
 	}
 
-	if ((search = malloc(sizeof(*search))) == NULL) {
+	view = spthui_list_new(spthui);
+	if ((search = search_init(view, spthui->sp_session, gtk_entry_get_text(query))) == NULL) {
 		fprintf(stderr,
 			"%s(): %s\n", __func__, strerror(errno));
 		return;
 	}
-
-	search->name = strdup(gtk_entry_get_text(query));
-	view = spthui_list_new(spthui);
-	search->store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
-
-	search->search =
-		sp_search_create(spthui->sp_session,
-				 gtk_entry_get_text(query),
-				 /* track offset, count */
-				 0, SPTHUI_SEARCH_CHUNK,
-				 /* album  offset, count */
-				 0, SPTHUI_SEARCH_CHUNK,
-				 /* artist offset, count */
-				 0, SPTHUI_SEARCH_CHUNK,
-				 /* playlist offset, count */
-				 0, SPTHUI_SEARCH_CHUNK,
-				 SP_SEARCH_STANDARD,
-				 search_complete,
-				 search);
 
 	if ((item = item_init_search(search)) == NULL) {
 		fprintf(stderr,
 			"%s(): %s\n", __func__, strerror(errno));
 	}
 
-	tab_add(spthui->tabs, view, search->name, item);
+	tab_add(spthui->tabs, view, gtk_entry_get_text(query), item);
 }
 
 static void try_login_cb(const char *username, const char *password,

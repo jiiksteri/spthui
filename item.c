@@ -46,8 +46,7 @@ struct item *item_init_none(void)
 
 struct item *item_init_search(struct search *search)
 {
-	sp_search_add_ref(search->search);
-	return item_init(ITEM_SEARCH, search, strdup(sp_search_query(search->search)));
+	return item_init(ITEM_SEARCH, search, strdup(search_name(search)));
 }
 
 struct item *item_init_artist(sp_artist *artist)
@@ -70,14 +69,6 @@ struct item *item_init_albumbrowse(struct albumbrowse *browse, char *name)
 	return item_init(ITEM_ALBUMBROWSE, browse, name);
 }
 
-/* Once this gets a proper module, move this there.
- */
-static void search_free(struct search *search)
-{
-	sp_search_release(search->search);
-	free(search->name);
-}
-
 /* same here. */
 static void albumbrowse_free(struct albumbrowse *browse)
 {
@@ -97,7 +88,7 @@ void item_free(struct item *item)
 		sp_track_release(item->item);
 		break;
 	case ITEM_SEARCH:
-		search_free(item->item);
+		search_destroy(item->item);
 		break;
 	case ITEM_ARTIST:
 		sp_artist_release(item->item);

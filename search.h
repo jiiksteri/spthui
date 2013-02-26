@@ -5,22 +5,19 @@
 #include <libspotify/api.h>
 
 /*
- * We need a thin struct search helper, because sp_search_create() wants
- * a callback argument and we don't want to pass the whole struct spthui.
+ * Search helpers.
  *
- * Instead, we want to pass a tab. But to have a tab, we need a
- * struct item, where we want the sp_search, so item_free() can
- * get rid of it.
+ * When passed in a target view, a session and a query, handles search initialization
+ * and completion.
  *
- * We don't go through the trouble of hiding the struct or anything.
- * We just declare it here so both item.c and spthui.c can know
- * about it.
+ * This will need to get massaged into continuable searches later.
  */
 
-struct search {
-	char *name;
-	GtkListStore *store;
-	sp_search *search;
-};
+struct search;
+
+struct search *search_init(GtkTreeView *view, sp_session *sp_session, const char *query);
+void search_destroy(struct search *search);
+
+const char *search_name(struct search *search);
 
 #endif
