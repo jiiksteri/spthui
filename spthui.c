@@ -946,6 +946,30 @@ static struct playback_panel_ops playback_panel_ops = {
 	.seek = spthui_seek,
 };
 
+
+static void continue_search_maybe(GtkAdjustment *adj, void *user_data)
+{
+	struct search *search = user_data;
+
+	gdouble value = gtk_adjustment_get_value(adj);
+	gdouble upper = gtk_adjustment_get_upper(adj);
+	gdouble page_size = gtk_adjustment_get_page_size(adj);
+
+	if (value + page_size >= upper) {
+		search_continue(search);
+	}
+}
+
+static GtkAdjustment *get_parent_vadjustment(GtkTreeView *view)
+{
+	GtkScrolledWindow *win;
+
+	win = GTK_SCROLLED_WINDOW(gtk_widget_get_parent(GTK_WIDGET(view)));
+	return gtk_scrolled_window_get_vadjustment(win);
+}
+
+
+
 static void init_search(GtkEntry *query, void *user_data)
 {
 	struct spthui *spthui = user_data;
@@ -970,6 +994,13 @@ static void init_search(GtkEntry *query, void *user_data)
 	}
 
 	tab_add(spthui->tabs, view, gtk_entry_get_text(query), item);
+
+	/* We need to connect value-changed on the GtkScrolledWindow parent
+	 * of the view. This assumes knowledge of tab internals and should
+	 * probably live somewhere else.
+	 */
+	g_signal_connect(get_parent_vadjustment(view), "value_changed",
+			 G_CALLBACK(continue_search_maybe), search);
 }
 
 static void try_login_cb(const char *username, const char *password,

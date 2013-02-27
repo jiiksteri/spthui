@@ -20,4 +20,6 @@ void search_destroy(struct search *search);
 
 const char *search_name(struct search *search);
 
+void search_continue(struct search *search);
+
 #endif

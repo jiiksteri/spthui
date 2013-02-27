@@ -65,6 +65,11 @@ static void search_complete(sp_search *sp_search, void *userdata)
 
 #define SPTHUI_SEARCH_CHUNK 20
 
+void search_continue(struct search *search)
+{
+	fprintf(stderr, "%s(): not implemented\n", __func__);
+}
+
 struct search *search_init(GtkTreeView *view, sp_session *sp_session, const char *query)
 {
 	struct search *search;
