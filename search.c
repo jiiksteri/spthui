@@ -9,14 +9,21 @@
 #include "item.h"
 
 struct search {
-	char *name;
+	char *query;
 	GtkListStore *store;
+
+	sp_session *sp_session;
 	sp_search *search;
+
+	int artists_offset;
+	int albums_offset;
+	int tracks_offset;
+	int playlists_offset;
 };
 
 const char *search_name(struct search *search)
 {
-	return search->name;
+	return search->query;
 }
 
 static char *artist_album_track(sp_track *track)
@@ -60,14 +67,57 @@ static void search_complete(sp_search *sp_search, void *userdata)
 				   0, item,
 				   1, item_name(item),
 				   -1);
+		search->tracks_offset++;
 	}
 }
 
 #define SPTHUI_SEARCH_CHUNK 20
 
+static struct search *do_search(struct search *search)
+{
+	if (search->search != NULL) {
+		sp_search_release(search->search);
+	}
+
+	search->search =
+		sp_search_create(search->sp_session,
+				 search->query,
+				 /* track offset, count */
+				 search->tracks_offset, SPTHUI_SEARCH_CHUNK,
+				 /* album  offset, count */
+				 search->albums_offset, SPTHUI_SEARCH_CHUNK,
+				 /* artist offset, count */
+				 search->artists_offset, SPTHUI_SEARCH_CHUNK,
+				 /* playlist offset, count */
+				 search->playlists_offset, SPTHUI_SEARCH_CHUNK,
+				 SP_SEARCH_STANDARD,
+				 search_complete,
+				 search);
+
+	return search;
+}
+
 void search_continue(struct search *search)
 {
-	fprintf(stderr, "%s(): not implemented\n", __func__);
+	int total_artists = sp_search_total_artists(search->search);
+	int total_albums = sp_search_total_albums(search->search);
+	int total_tracks = sp_search_total_tracks(search->search);
+	int total_playlists = sp_search_total_playlists(search->search);
+
+	fprintf(stderr,
+		"%s(): artists:%d/%d albums:%d/%d tracks:%d/%d playlists:%d/%d\n",
+		__func__,
+		search->artists_offset, total_artists,
+		search->albums_offset, total_albums,
+		search->tracks_offset, total_tracks,
+		search->playlists_offset, total_playlists);
+
+	/* FIXME: We only handle tracks now, and the UI needs an overhaul
+	 * to present different results.
+	 */
+	if (search->tracks_offset < total_tracks) {
+		do_search(search);
+	}
 }
 
 struct search *search_init(GtkTreeView *view, sp_session *sp_session, const char *query)
@@ -77,28 +127,13 @@ struct search *search_init(GtkTreeView *view, sp_session *sp_session, const char
 	if ((search = malloc(sizeof(*search))) == NULL) {
 		return NULL;
 	}
+	memset(search, 0, sizeof(*search));
 
-	search->name = strdup(query);
+	search->sp_session = sp_session;
+	search->query = strdup(query);
 	search->store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
 
-	search->search =
-		sp_search_create(sp_session,
-				 query,
-				 /* track offset, count */
-				 0, SPTHUI_SEARCH_CHUNK,
-				 /* album  offset, count */
-				 0, SPTHUI_SEARCH_CHUNK,
-				 /* artist offset, count */
-				 0, SPTHUI_SEARCH_CHUNK,
-				 /* playlist offset, count */
-				 0, SPTHUI_SEARCH_CHUNK,
-				 SP_SEARCH_STANDARD,
-				 search_complete,
-				 search);
-
-	return search;
-
-
+	return do_search(search);
 }
 
 void search_destroy(struct search *search)
@@ -106,7 +141,7 @@ void search_destroy(struct search *search)
 	if (search->search != NULL) {
 		sp_search_release(search->search);
 	}
-	free(search->name);
+	free(search->query);
 	free(search);
 }
 
