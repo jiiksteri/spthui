@@ -112,7 +112,12 @@ static void setup_menu_for_item(struct popup *popup,
 	case ITEM_NONE:
 	case ITEM_SEARCH:
 	case ITEM_ARTIST:
+		break;
+
 	case ITEM_ALBUM:
+		add_item_album(popup, item_album(item));
+		add_item_artist(popup, sp_album_artist(item_album(item)));
+		break;
 
 	case ITEM_PLAYLIST:
 		add_item_playlist_expand(popup, item_playlist(item), item_name(item));
