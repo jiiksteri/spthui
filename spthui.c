@@ -730,17 +730,13 @@ static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 	}
 
 	switch (item_type(item)) {
-	case ITEM_PLAYLIST:
-		expand_playlist(spthui, item);
-		break;
 	case ITEM_TRACK:
 		spthui->current_view = view;
 		spthui->current_track = item_track(item);
 		track_play(spthui, item_track(item));
 		break;
 	default:
-		fprintf(stderr, "%s(): unknown item in list, type %d\n",
-			__func__, item_type(item));
+		expand_item(item, spthui);
 		break;
 	}
 }
