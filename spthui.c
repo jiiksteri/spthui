@@ -82,89 +82,19 @@ static int spthui_unlock(struct spthui *spthui)
 	return pthread_mutex_unlock(&spthui->lock);
 }
 
-enum {
-	COLUMN_OBJECT,
-	COLUMN_NAME,
-};
-
-static GType list_columns[] = {
-	[COLUMN_OBJECT] = G_TYPE_POINTER, /* item itself */
-	[COLUMN_NAME] = G_TYPE_STRING,  /* item name */
-};
-
-
-static gboolean view_get_selected(GtkTreeView *view, struct item **item)
-{
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	GtkTreeSelection *selection;
-	gboolean have_selected;
-
-	selection = gtk_tree_view_get_selection(view);
-	have_selected = gtk_tree_selection_get_selected(selection, &model, &iter);
-
-	if (have_selected) {
-		gtk_tree_model_get(model, &iter, COLUMN_OBJECT, item, -1);
-	}
-
-	return have_selected;
-}
-
-
-
-static inline gboolean view_get_iter_at_pos(GtkTreeView *view,
-					    GdkEventButton *event,
-					    GtkTreeIter *iter)
-{
-	GtkTreePath *path;
-	GtkTreeModel *model;
-	gboolean valid;
-
-	valid = gtk_tree_view_get_path_at_pos(view, event->x, event->y,
-					      &path,
-					      (GtkTreeViewColumn **)NULL,
-					      (gint *)NULL,
-					      (gint *)NULL);
-
-	if (valid) {
-		model = gtk_tree_view_get_model(view);
-		valid = gtk_tree_model_get_iter(model, iter, path);
-		gtk_tree_path_free(path);
-	}
-
-	return valid;
-}
-
-static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, void *user_data);
-
 static void list_item_activated(GtkTreeView *view, GtkTreePath *path,
 				GtkTreeViewColumn *column, void *userdata);
 
+static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, void *user_data);
+
+static struct view_ops view_ops = {
+	.item_activate = list_item_activated,
+	.item_popup = spthui_popup_maybe,
+};
+
 static GtkTreeView *spthui_list_new(struct spthui *spthui)
 {
-	GtkTreeView *view;
-	GtkTreeModel *model;
-	GtkTreeViewColumn *column;
-
-	int n_columns;
-
-	n_columns = sizeof(list_columns) / sizeof(*list_columns);
-
-	model = GTK_TREE_MODEL(gtk_list_store_newv(n_columns, list_columns));
-	view = GTK_TREE_VIEW(gtk_tree_view_new_with_model(model));
-	gtk_tree_view_set_headers_visible(view, FALSE);
-
-	column = gtk_tree_view_column_new_with_attributes("Item",
-							  gtk_cell_renderer_text_new(),
-							  "text", COLUMN_NAME,
-							  NULL);
-	gtk_tree_view_append_column(view, column);
-
-
-	g_signal_connect(view, "button-press-event", G_CALLBACK(spthui_popup_maybe), spthui);
-	g_signal_connect(view, "row-activated", G_CALLBACK(list_item_activated), spthui);
-
-	return view;
+	return view_new_list(&view_ops, spthui);
 }
 
 
@@ -757,7 +687,6 @@ static void expand_item(struct item *item, void *user_data)
 
 static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, void *user_data)
 {
-	struct spthui *spthui = user_data;
 	GtkTreeModel *model;
 	struct item *item;
 	char *name;
@@ -774,7 +703,7 @@ static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, voi
 					   COLUMN_NAME, &name,
 					   -1);
 			popup_show(item, name, event->button, event->time,
-				   expand_item, spthui);
+				   expand_item, user_data);
 		} else {
 			fprintf(stderr, "%s(): nothing selected\n", __func__);
 		}
