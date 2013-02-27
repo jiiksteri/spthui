@@ -839,7 +839,7 @@ static void setup_tabs(struct spthui *spthui)
 	spthui->tabs = tabs_init(&tabs_ops, spthui);
 
 	view = spthui_list_new(spthui);
-	tab_add(spthui->tabs, view, "Playlists", item_init_none());
+	tab_add(spthui->tabs, view, "Playlists", item_init_none(strdup("Playlists")));
 }
 
 static void spthui_exit(void *user_data)

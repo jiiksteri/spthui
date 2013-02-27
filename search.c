@@ -71,9 +71,12 @@ static char *artist_album_track(sp_track *track)
 static GtkTreeIter *iter_root(struct search *search, enum iter iter)
 {
 	if ((search->root_set & (1 << iter)) == 0) {
+		struct item *item = item_init_none(strdup(root_names[iter]));
 		gtk_tree_store_append(search->store, &search->root[iter], NULL);
 		gtk_tree_store_set(search->store, &search->root[iter],
-				   1, root_names[iter], -1);
+				   0, item,
+				   1, item_name(item),
+				   -1);
 		search->root_set |= (1 << iter);
 	}
 

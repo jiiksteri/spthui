@@ -39,9 +39,9 @@ struct item *item_init_track(sp_track *track, char *name)
 	return item_init(ITEM_TRACK, track, name);
 }
 
-struct item *item_init_none(void)
+struct item *item_init_none(char *name)
 {
-	return item_init(ITEM_NONE, NULL, strdup("NONE"));
+	return item_init(ITEM_NONE, NULL, name);
 }
 
 struct item *item_init_search(struct search *search)
