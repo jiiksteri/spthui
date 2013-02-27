@@ -150,8 +150,9 @@ gboolean view_get_iter_at_pos(GtkTreeView *view,
 	return valid;
 }
 
+typedef GtkTreeModel *(*model_ctor)(gint n_columns, GType *types);
 
-GtkTreeView *view_new_list(struct view_ops *ops, void *userdata)
+GtkTreeView *view_new_with_model(model_ctor model_ctor, struct view_ops *ops, void *userdata)
 {
 	GtkTreeView *view;
 	GtkTreeModel *model;
@@ -161,7 +162,7 @@ GtkTreeView *view_new_list(struct view_ops *ops, void *userdata)
 
 	n_columns = sizeof(list_columns) / sizeof(*list_columns);
 
-	model = GTK_TREE_MODEL(gtk_list_store_newv(n_columns, list_columns));
+	model = model_ctor(n_columns, list_columns);
 	view = GTK_TREE_VIEW(gtk_tree_view_new_with_model(model));
 	gtk_tree_view_set_headers_visible(view, FALSE);
 
@@ -176,4 +177,14 @@ GtkTreeView *view_new_list(struct view_ops *ops, void *userdata)
 	g_signal_connect(view, "row-activated", G_CALLBACK(ops->item_activate), userdata);
 
 	return view;
+}
+
+GtkTreeView *view_new_list(struct view_ops *ops, void *userdata)
+{
+	return view_new_with_model((model_ctor)gtk_list_store_newv, ops, userdata);
+}
+
+GtkTreeView *view_new_tree(struct view_ops *ops, void *userdata)
+{
+	return view_new_with_model((model_ctor)gtk_tree_store_newv, ops, userdata);
 }

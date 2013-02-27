@@ -8,9 +8,14 @@
 
 #include "item.h"
 
+enum iter {
+	ITER_TRACK,
+	ITER__COUNT,
+};
+
 struct search {
 	char *query;
-	GtkListStore *store;
+	GtkTreeStore *store;
 
 	sp_session *sp_session;
 	sp_search *search;
@@ -19,6 +24,10 @@ struct search {
 	int albums_offset;
 	int tracks_offset;
 	int playlists_offset;
+
+	int root_set;
+
+	GtkTreeIter root[ITER__COUNT];
 };
 
 const char *search_name(struct search *search)
@@ -47,6 +56,18 @@ static char *artist_album_track(sp_track *track)
 }
 
 
+static GtkTreeIter *iter_root(struct search *search, enum iter iter)
+{
+	if ((search->root_set & (1 << iter)) == 0) {
+		gtk_tree_store_append(search->store, &search->root[iter], NULL);
+		gtk_tree_store_set(search->store, &search->root[iter],
+				   1, "Tracks", -1);
+		search->root_set |= (1 << iter);
+	}
+
+	return &search->root[iter];
+}
+
 static void search_complete(sp_search *sp_search, void *userdata)
 {
 	GtkTreeIter iter;
@@ -62,8 +83,8 @@ static void search_complete(sp_search *sp_search, void *userdata)
 	for (i = 0; i < sp_search_num_tracks(sp_search); i++) {
 		sp_track *track = sp_search_track(sp_search, i);
 		struct item *item = item_init_track(track, artist_album_track(track));
-		gtk_list_store_append(search->store, &iter);
-		gtk_list_store_set(search->store, &iter,
+		gtk_tree_store_append(search->store, &iter, iter_root(search, ITER_TRACK));
+		gtk_tree_store_set(search->store, &iter,
 				   0, item,
 				   1, item_name(item),
 				   -1);
@@ -131,7 +152,7 @@ struct search *search_init(GtkTreeView *view, sp_session *sp_session, const char
 
 	search->sp_session = sp_session;
 	search->query = strdup(query);
-	search->store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
+	search->store = GTK_TREE_STORE(gtk_tree_view_get_model(view));
 
 	return do_search(search);
 }

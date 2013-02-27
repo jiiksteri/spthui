@@ -981,7 +981,7 @@ static void init_search(GtkEntry *query, void *user_data)
 		return;
 	}
 
-	view = spthui_list_new(spthui);
+	view = view_new_tree(&view_ops, spthui);
 	if ((search = search_init(view, spthui->sp_session, gtk_entry_get_text(query))) == NULL) {
 		fprintf(stderr,
 			"%s(): %s\n", __func__, strerror(errno));

@@ -16,6 +16,7 @@ struct view_ops {
 };
 
 GtkTreeView *view_new_list(struct view_ops *ops, void *userdata);
+GtkTreeView *view_new_tree(struct view_ops *ops, void *userdata);
 
 gboolean view_get_selected(GtkTreeView *view, struct item **item);
 
