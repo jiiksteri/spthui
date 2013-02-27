@@ -9,9 +9,21 @@
 #include "item.h"
 
 enum iter {
+	ITER_ARTIST,
+	ITER_ALBUM,
+	ITER_PLAYLIST,
 	ITER_TRACK,
+
 	ITER__COUNT,
 };
+
+static const char *root_names[ITER__COUNT] = {
+	"Artists",
+	"Albums",
+	"Playlists",
+	"Tracks",
+};
+
 
 struct search {
 	char *query;
@@ -61,16 +73,26 @@ static GtkTreeIter *iter_root(struct search *search, enum iter iter)
 	if ((search->root_set & (1 << iter)) == 0) {
 		gtk_tree_store_append(search->store, &search->root[iter], NULL);
 		gtk_tree_store_set(search->store, &search->root[iter],
-				   1, "Tracks", -1);
+				   1, root_names[iter], -1);
 		search->root_set |= (1 << iter);
 	}
 
 	return &search->root[iter];
 }
 
-static void search_complete(sp_search *sp_search, void *userdata)
+static inline void append_to(struct search *search, enum iter iter_ind, struct item *item)
 {
 	GtkTreeIter iter;
+
+	gtk_tree_store_append(search->store, &iter, iter_root(search, iter_ind));
+	gtk_tree_store_set(search->store, &iter,
+			   0, item,
+			   1, item_name(item),
+			   -1);
+}
+
+static void search_complete(sp_search *sp_search, void *userdata)
+{
 	struct search *search = userdata;
 	int i;
 
@@ -80,14 +102,30 @@ static void search_complete(sp_search *sp_search, void *userdata)
 	 * as struct albumbrowse knows nothing of such things.
 	 * Fortunately gdk seems to survive for now.
 	 */
+
+	for (i = 0; i < sp_search_num_artists(sp_search); i++) {
+		sp_artist *artist = sp_search_artist(sp_search, i);
+		append_to(search, ITER_ARTIST, item_init_artist(artist));
+		search->artists_offset++;
+	}
+
+	for (i = 0; i < sp_search_num_albums(sp_search); i++) {
+		sp_album *album = sp_search_album(sp_search, i);
+		append_to(search, ITER_ALBUM, item_init_album(album));
+		search->albums_offset++;
+	}
+
+	for (i = 0; i < sp_search_num_playlists(sp_search); i++) {
+		sp_playlist *pl = sp_search_playlist(sp_search, i);
+		append_to(search, ITER_PLAYLIST,
+			  item_init_playlist(pl, strdup(sp_playlist_name(pl))));
+		search->playlists_offset++;
+	}
+
 	for (i = 0; i < sp_search_num_tracks(sp_search); i++) {
 		sp_track *track = sp_search_track(sp_search, i);
-		struct item *item = item_init_track(track, artist_album_track(track));
-		gtk_tree_store_append(search->store, &iter, iter_root(search, ITER_TRACK));
-		gtk_tree_store_set(search->store, &iter,
-				   0, item,
-				   1, item_name(item),
-				   -1);
+		append_to(search, ITER_TRACK,
+			  item_init_track(track, artist_album_track(track)));
 		search->tracks_offset++;
 	}
 }
