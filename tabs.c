@@ -97,6 +97,10 @@ void tab_add(struct tabs *tabs, GtkTreeView *view,
 	int n_pages;
 
 	win = gtk_scrolled_window_new(NULL, NULL);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(win),
+				       GTK_POLICY_AUTOMATIC,
+				       GTK_POLICY_AUTOMATIC);
+
 	gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(view));
 
 	label = gtk_label_new(label_text);
