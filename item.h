@@ -32,7 +32,7 @@ struct item *item_init_track(sp_track *track, char *name);
 struct item *item_init_none(char *name);
 struct item *item_init_search(struct search *search);
 struct item *item_init_artist(sp_artist *artist);
-struct item *item_init_album(sp_album *album);
+struct item *item_init_album(sp_album *album, char *name);
 struct item *item_init_albumbrowse(struct albumbrowse *browse, char *name);
 
 void item_free(struct item *item);

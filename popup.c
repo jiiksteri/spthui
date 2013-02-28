@@ -96,7 +96,8 @@ static void add_item_artist(struct popup *popup, sp_artist *artist)
 
 static void add_item_album(struct popup *popup, sp_album *album)
 {
-	add_item(popup, item_init_album(album), "Album: %s", sp_album_name(album));
+	add_item(popup, item_init_album(album, strdup(sp_album_name(album))),
+		 "Album: %s", sp_album_name(album));
 }
 
 static void add_item_playlist_expand(struct popup *popup, sp_playlist *pl,

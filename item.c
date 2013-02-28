@@ -55,10 +55,10 @@ struct item *item_init_artist(sp_artist *artist)
 	return item_init(ITEM_ARTIST, artist, strdup(sp_artist_name(artist)));
 }
 
-struct item *item_init_album(sp_album *album)
+struct item *item_init_album(sp_album *album, char *name)
 {
 	sp_album_add_ref(album);
-	return item_init(ITEM_ALBUM, album, strdup(sp_album_name(album)));
+	return item_init(ITEM_ALBUM, album, name);
 }
 
 struct item *item_init_albumbrowse(struct albumbrowse *browse, char *name)
