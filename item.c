@@ -99,6 +99,9 @@ void item_free(struct item *item)
 	case ITEM_ALBUMBROWSE:
 		albumbrowse_free(item->item);
 		break;
+	case ITEM__COUNT:
+		assert(0 && "ITEM__COUNT is not really an item type");
+		break;
 	}
 
 	free(item->name);

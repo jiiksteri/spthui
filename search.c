@@ -9,20 +9,14 @@
 #include "item.h"
 #include "titles.h"
 
-enum iter {
-	ITER_ARTIST,
-	ITER_ALBUM,
-	ITER_PLAYLIST,
-	ITER_TRACK,
-
-	ITER__COUNT,
-};
-
-static const char *root_names[ITER__COUNT] = {
-	"Artists",
-	"Albums",
-	"Playlists",
-	"Tracks",
+static const char *root_names[ITEM__COUNT] = {
+	NULL,                /* ITEM_NONE          */
+	"Playlists",         /* ITEM_PLAYLIST      */
+	"Tracks",            /* ITEM_TRACK         */
+	NULL,                /* ITEM_SEARCH        */
+	"Artists",           /* ITEM_ARTIST        */
+	"Albums",            /* ITEM_ALBUM         */
+	NULL,                /* ITEM_ALBUMBROWSE   */
 };
 
 
@@ -40,7 +34,7 @@ struct search {
 
 	int root_set;
 
-	GtkTreeIter root[ITER__COUNT];
+	GtkTreeIter root[ITEM__COUNT];
 };
 
 const char *search_name(struct search *search)
@@ -48,26 +42,28 @@ const char *search_name(struct search *search)
 	return search->query;
 }
 
-static GtkTreeIter *iter_root(struct search *search, enum iter iter)
+static GtkTreeIter *iter_root(struct search *search, enum item_type type)
 {
-	if ((search->root_set & (1 << iter)) == 0) {
-		struct item *item = item_init_none(strdup(root_names[iter]));
-		gtk_tree_store_append(search->store, &search->root[iter], NULL);
-		gtk_tree_store_set(search->store, &search->root[iter],
+	if ((search->root_set & (1 << type)) == 0) {
+		struct item *item = item_init_none(strdup(root_names[type]));
+		gtk_tree_store_append(search->store, &search->root[type], NULL);
+		gtk_tree_store_set(search->store, &search->root[type],
 				   0, item,
 				   1, item_name(item),
 				   -1);
-		search->root_set |= (1 << iter);
+		search->root_set |= (1 << type);
 	}
 
-	return &search->root[iter];
+	return &search->root[type];
 }
 
-static inline void append_to(struct search *search, enum iter iter_ind, struct item *item)
+static inline void append_to(struct search *search, struct item *item)
 {
 	GtkTreeIter iter;
+	enum item_type type;
 
-	gtk_tree_store_append(search->store, &iter, iter_root(search, iter_ind));
+	type = item_type(item);
+	gtk_tree_store_append(search->store, &iter, iter_root(search, type));
 	gtk_tree_store_set(search->store, &iter,
 			   0, item,
 			   1, item_name(item),
@@ -88,28 +84,25 @@ static void search_complete(sp_search *sp_search, void *userdata)
 
 	for (i = 0; i < sp_search_num_artists(sp_search); i++) {
 		sp_artist *artist = sp_search_artist(sp_search, i);
-		append_to(search, ITER_ARTIST, item_init_artist(artist));
+		append_to(search, item_init_artist(artist));
 		search->artists_offset++;
 	}
 
 	for (i = 0; i < sp_search_num_albums(sp_search); i++) {
 		sp_album *album = sp_search_album(sp_search, i);
-		append_to(search, ITER_ALBUM,
-			  item_init_album(album, title_artist_album(album)));
+		append_to(search, item_init_album(album, title_artist_album(album)));
 		search->albums_offset++;
 	}
 
 	for (i = 0; i < sp_search_num_playlists(sp_search); i++) {
 		sp_playlist *pl = sp_search_playlist(sp_search, i);
-		append_to(search, ITER_PLAYLIST,
-			  item_init_playlist(pl, strdup(sp_playlist_name(pl))));
+		append_to(search, item_init_playlist(pl, strdup(sp_playlist_name(pl))));
 		search->playlists_offset++;
 	}
 
 	for (i = 0; i < sp_search_num_tracks(sp_search); i++) {
 		sp_track *track = sp_search_track(sp_search, i);
-		append_to(search, ITER_TRACK,
-			  item_init_track(track, title_artist_album_track(track)));
+		append_to(search, item_init_track(track, title_artist_album_track(track)));
 		search->tracks_offset++;
 	}
 }

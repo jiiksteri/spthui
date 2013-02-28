@@ -13,6 +13,8 @@ enum item_type {
 	ITEM_ARTIST,
 	ITEM_ALBUM,
 	ITEM_ALBUMBROWSE,
+
+	ITEM__COUNT,
 };
 
 struct item;

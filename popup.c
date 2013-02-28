@@ -135,6 +135,10 @@ static void setup_menu_for_item(struct popup *popup,
 		add_item_artist(popup,sp_track_artist(item_track(item), 0));
 		add_item_album(popup, sp_track_album(item_track(item)));
 		break;
+
+	case ITEM__COUNT:
+		g_assert(0 && "ITEM__COUNT is not really an item type");
+		break;
 	}
 }
 
