@@ -7,6 +7,7 @@
 #include <libspotify/api.h>
 
 #include "item.h"
+#include "titles.h"
 
 enum iter {
 	ITER_ARTIST,
@@ -46,44 +47,6 @@ const char *search_name(struct search *search)
 {
 	return search->query;
 }
-
-static char *artist_album_track(sp_track *track)
-{
-	const char *artist, *album, *track_name;
-	char *name;
-	size_t sz;
-
-	artist = sp_artist_name(sp_track_artist(track, 0));
-	album = sp_album_name(sp_track_album(track));
-	track_name = sp_track_name(track);
-
-	sz = strlen(artist) + 3 + strlen(album) + 3 +
-		strlen(track_name) + 1;
-
-	name = malloc(sz);
-	snprintf(name, sz, "%s - %s - %s", artist, album, track_name);
-	name[sz-1] = '\0';
-
-	return name;
-}
-
-static char *artist_album(sp_album *album)
-{
-	const char *artist, *album_name;
-	char *name;
-	size_t sz;
-
-
-	artist = sp_artist_name(sp_album_artist(album));
-	album_name = sp_album_name(album);
-
-	sz = strlen(artist) + 3 + strlen(album_name) + 1;
-	name = malloc(sz);
-	snprintf(name, sz, "%s - %s", artist, album_name);
-	name[sz-1] = '\0';
-
-	return name;
-};
 
 static GtkTreeIter *iter_root(struct search *search, enum iter iter)
 {
@@ -132,7 +95,7 @@ static void search_complete(sp_search *sp_search, void *userdata)
 	for (i = 0; i < sp_search_num_albums(sp_search); i++) {
 		sp_album *album = sp_search_album(sp_search, i);
 		append_to(search, ITER_ALBUM,
-			  item_init_album(album, artist_album(album)));
+			  item_init_album(album, title_artist_album(album)));
 		search->albums_offset++;
 	}
 
@@ -146,7 +109,7 @@ static void search_complete(sp_search *sp_search, void *userdata)
 	for (i = 0; i < sp_search_num_tracks(sp_search); i++) {
 		sp_track *track = sp_search_track(sp_search, i);
 		append_to(search, ITER_TRACK,
-			  item_init_track(track, artist_album_track(track)));
+			  item_init_track(track, title_artist_album_track(track)));
 		search->tracks_offset++;
 	}
 }

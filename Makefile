@@ -60,7 +60,16 @@ LDFLAGS += -L$(LIBSPOTIFY_PATH)/lib -Wl,--rpath=$(LIBSPOTIFY_PATH)/lib \
 
 all: spthui
 
-spthui: audio.o item.o view.o popup.o playback_panel.o login_dialog.o tabs.o search.o spthui.o
+spthui: audio.o \
+	titles.o \
+	item.o \
+	view.o \
+	popup.o \
+	playback_panel.o \
+	login_dialog.o \
+	tabs.o \
+	search.o \
+	spthui.o
 
 clean:
 	$(RM) spthui *.o
