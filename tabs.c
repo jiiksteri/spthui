@@ -99,6 +99,16 @@ static void report_image_loaded(sp_image *image, void *user_data)
 	g_object_unref(box);
 }
 
+static inline GtkWidget *pad_right(GtkWidget *widget, int amount)
+{
+	GtkWidget *align;
+
+	align = gtk_alignment_new(0.5, 0.5, 0.5, 0.5);
+	gtk_alignment_set_padding(GTK_ALIGNMENT(align), 0, 0, 0, amount);
+	gtk_container_add(GTK_CONTAINER(align), widget);
+	return align;
+}
+
 static struct tab *tab_init(sp_session *sp_session, struct item *item,
 			    const char *label_text)
 {
@@ -115,7 +125,7 @@ static struct tab *tab_init(sp_session *sp_session, struct item *item,
 
 	tab->header_box = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
 	tab->image_container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_box_pack_start(tab->header_box, tab->image_container, FALSE, FALSE, 0);
+	gtk_box_pack_start(tab->header_box, pad_right(tab->image_container, 10), FALSE, FALSE, 0);
 	gtk_box_pack_start(tab->header_box, label, FALSE, FALSE, 0);
 
 	if (item_has_image(item)) {
