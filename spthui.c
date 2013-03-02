@@ -815,7 +815,7 @@ static void close_selected_tab(struct tabs *tabs, int current, void *userdata)
 			spthui_unlock(spthui);
 		}
 
-		tabs_remove(spthui->tabs, current);
+		item_free(tabs_remove(spthui->tabs, current));
 	}
 }
 
