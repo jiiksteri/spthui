@@ -11,6 +11,9 @@
 
 struct tab {
 	struct item *item;
+
+	GtkBox *header_box;
+	GtkWidget *image_container;
 };
 
 struct tabs {
@@ -86,13 +89,41 @@ struct tabs *tabs_init(struct tabs_ops *ops, sp_session *sp_session, void *userd
 
 }
 
-static struct tab *tab_init(struct item *item)
+static void report_image_loaded(sp_image *image, void *user_data)
+{
+	GtkWidget *box = user_data;
+
+	fprintf(stderr, "%s(): NOT IMPLEMENTED: image=%p box=%p drawable=%d\n",
+		__func__, image, box, gtk_widget_is_drawable(box));
+
+	g_object_unref(box);
+}
+
+static struct tab *tab_init(sp_session *sp_session, struct item *item,
+			    const char *label_text)
 {
 	struct tab *tab;
+	GtkWidget *label;
 
 	tab = malloc(sizeof(*tab));
 	memset(tab, 0, sizeof(*tab));
+
 	tab->item = item;
+
+	label = gtk_label_new(label_text);
+	gtk_label_set_max_width_chars(GTK_LABEL(label), 10);
+
+	tab->header_box = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
+	tab->image_container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_box_pack_start(tab->header_box, tab->image_container, FALSE, FALSE, 0);
+	gtk_box_pack_start(tab->header_box, label, FALSE, FALSE, 0);
+
+	if (item_has_image(item)) {
+		g_object_ref_sink(tab->header_box);
+		item_load_image(item, sp_session,
+				report_image_loaded, tab->header_box);
+	}
+
 	return tab;
 }
 
@@ -114,36 +145,11 @@ void tabs_destroy(struct tabs *tabs)
 	free(tabs);
 }
 
-static void report_image_loaded(sp_image *image, void *user_data)
-{
-	fprintf(stderr, "%s(): NOT IMPLEMENTED: image=%p user_data=%p\n",
-		__func__, image, user_data);
-}
-
-static GtkWidget *setup_tab_label(sp_session *sp_session, struct item *item, const char *label_text)
-{
-	GtkWidget *label, *box;
-
-	label = gtk_label_new(label_text);
-	gtk_label_set_max_width_chars(GTK_LABEL(label), 10);
-
-	if (item_has_image(item)) {
-		box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-		item_load_image(item, sp_session, report_image_loaded, box);
-		/* FIXME: prepare the image widget and add it here */
-		gtk_box_pack_start(GTK_BOX(box), label, FALSE, FALSE, 0);
-		label = box;
-	}
-
-	return label;
-
-}
-
 void tab_add(struct tabs *tabs, GtkTreeView *view,
 	     const char *label_text, struct item *item)
 {
 	GtkWidget *win;
-	GtkWidget *label;
+	struct tab *tab;
 	int n_pages;
 
 	win = gtk_scrolled_window_new(NULL, NULL);
@@ -152,8 +158,6 @@ void tab_add(struct tabs *tabs, GtkTreeView *view,
 				       GTK_POLICY_AUTOMATIC);
 
 	gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(view));
-
-	label = setup_tab_label(tabs->sp_session, item, label_text);
 
 	n_pages = gtk_notebook_get_n_pages(tabs->tabs);
 	if (n_pages >= tabs->n_tab_items) {
@@ -166,9 +170,12 @@ void tab_add(struct tabs *tabs, GtkTreeView *view,
 
 	}
 
-	tabs->tab_items[n_pages] = tab_init(item);
-	gtk_notebook_append_page(tabs->tabs, win, label);
+	tab = tab_init(tabs->sp_session, item, label_text);
+	tabs->tab_items[n_pages] = tab;
 
+	gtk_notebook_append_page(tabs->tabs, win, GTK_WIDGET(tab->header_box));
+
+	gtk_widget_show_all(GTK_WIDGET(tab->header_box));
 	gtk_widget_show_all(win);
 }
 
