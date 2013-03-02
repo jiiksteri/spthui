@@ -601,20 +601,31 @@ static char *name_with_index(sp_track *track)
 	return buf;
 }
 
+static GdkPixbuf *scale_to_height(GdkPixbuf *orig, int height)
+{
+	GdkPixbuf *new;
+	int width;
+
+	width = gdk_pixbuf_get_width(orig) * height / gdk_pixbuf_get_height(orig);
+
+	new = gdk_pixbuf_scale_simple(orig, width, height, GDK_INTERP_BILINEAR);
+
+	g_object_unref(orig);
+	return new;
+}
+
 static void load_image_deferred(sp_image *image, void *user_data)
 {
 	GtkContainer *box = GTK_CONTAINER(user_data);
 	GdkPixbufLoader *loader;
-
-	fprintf(stderr, "%s(): image=%p box=%p drawable=%d\n",
-		__func__, image, box, gtk_widget_is_drawable(GTK_WIDGET(box)));
 
 	if (sp_image_format(image) == SP_IMAGE_FORMAT_JPEG) {
 		size_t sz;
 		const void *buf = sp_image_data(image, &sz);
 		loader = gdk_pixbuf_loader_new_with_type("jpeg", (GError **)NULL);
 		if (gdk_pixbuf_loader_write(loader, buf, sz, (GError **)NULL)) {
-			GdkPixbuf *pixbuf = gdk_pixbuf_loader_get_pixbuf(loader);
+			/* FIXME: Figure out a sane size */
+			GdkPixbuf *pixbuf = scale_to_height(gdk_pixbuf_loader_get_pixbuf(loader), 16);
 			gtk_container_add(box, GTK_WIDGET(gtk_image_new_from_pixbuf(pixbuf)));
 			gtk_widget_show_all(GTK_WIDGET(box));
 		} else {
@@ -622,7 +633,6 @@ static void load_image_deferred(sp_image *image, void *user_data)
 				__func__);
 		}
 		gdk_pixbuf_loader_close(loader, (GError **)NULL);
-		g_object_unref(loader);
 	} else {
 		fprintf(stderr, "%s(): unsupported format %d\n",
 			__func__, sp_image_format(image));
