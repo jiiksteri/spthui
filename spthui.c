@@ -207,7 +207,7 @@ static gboolean add_pl_or_name(struct pl_find_ctx *ctx)
 	GtkListStore *store;
 	GtkTreeView *view;
 
-	view = tab_get(ctx->tabs, ctx->tab_ind);
+	view = tab_view(ctx->tabs, ctx->tab_ind);
 	store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
 
 	gtk_tree_model_foreach(GTK_TREE_MODEL(store), pl_find_foreach, ctx);
@@ -802,7 +802,7 @@ static void close_selected_tab(struct tabs *tabs, int current, void *userdata)
 		 * and we have a track playing off it, stop playback
 		 * and clear ->current_{view,track}
 		 */
-		if (tab_get(spthui->tabs, current) == spthui->current_view) {
+		if (tab_view(spthui->tabs, current) == spthui->current_view) {
 
 			spthui_lock(spthui);
 			spthui->current_track = NULL;
@@ -824,7 +824,7 @@ static void switch_page(struct tabs *tabs, unsigned int page_num, void *userdata
 	struct spthui *spthui = userdata;
 
 	fprintf(stderr, "%s(): %d\n", __func__, page_num);
-	spthui->selected_view = tab_get(tabs, page_num);
+	spthui->selected_view = tab_view(tabs, page_num);
 }
 
 static struct tabs_ops tabs_ops = {

@@ -153,7 +153,7 @@ void tab_add(struct tabs *tabs, GtkTreeView *view,
 	gtk_widget_show_all(win);
 }
 
-GtkTreeView *tab_get(struct tabs *tabs, int ind)
+GtkTreeView *tab_view(struct tabs *tabs, int ind)
 {
 	GList *children;
 	GtkTreeView *tab;
