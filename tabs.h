@@ -6,6 +6,7 @@
 
 #include "item.h"
 
+struct tab;
 struct tabs;
 
 struct tabs_ops {
@@ -22,8 +23,10 @@ GtkWidget *tabs_widget(struct tabs *tabs);
 void tab_add(struct tabs *tabs, GtkTreeView *view,
 	     const char *label_text, struct item *item);
 
+void tab_destroy(struct tab *tab);
+
 GtkTreeView *tab_view(struct tabs *tabs, int ind);
 
-struct item *tabs_remove(struct tabs *tabs, int ind);
+struct tab *tabs_remove(struct tabs *tabs, int ind);
 
 #endif

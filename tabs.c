@@ -9,9 +9,13 @@
 
 #include "compat_gtk.h"
 
+struct tab {
+	struct item *item;
+};
+
 struct tabs {
 	GtkNotebook *tabs;
-	struct item **tab_items;
+	struct tab **tab_items;
 	int n_tab_items;
 
 	struct tabs_ops *ops;
@@ -82,13 +86,28 @@ struct tabs *tabs_init(struct tabs_ops *ops, sp_session *sp_session, void *userd
 
 }
 
+static struct tab *tab_init(struct item *item)
+{
+	struct tab *tab;
+
+	tab = malloc(sizeof(*tab));
+	memset(tab, 0, sizeof(*tab));
+	tab->item = item;
+	return tab;
+}
+
+void tab_destroy(struct tab *tab)
+{
+	item_free(tab->item);
+}
+
 void tabs_destroy(struct tabs *tabs)
 {
 	int i;
 
 	if (tabs->tab_items != NULL) {
 		for (i = 0; tabs->tab_items[i]; i++) {
-			item_free(tabs->tab_items[i]);
+			tab_destroy(tabs->tab_items[i]);
 		}
 		free(tabs->tab_items);
 	}
@@ -147,7 +166,7 @@ void tab_add(struct tabs *tabs, GtkTreeView *view,
 
 	}
 
-	tabs->tab_items[n_pages] = item;
+	tabs->tab_items[n_pages] = tab_init(item);
 	gtk_notebook_append_page(tabs->tabs, win, label);
 
 	gtk_widget_show_all(win);
@@ -166,9 +185,9 @@ GtkTreeView *tab_view(struct tabs *tabs, int ind)
 	return tab;
 }
 
-struct item *tabs_remove(struct tabs *tabs, int ind)
+struct tab *tabs_remove(struct tabs *tabs, int ind)
 {
-	struct item *removed;
+	struct tab *removed;
 
 	gtk_notebook_remove_page(tabs->tabs, ind);
 
