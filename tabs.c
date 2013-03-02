@@ -145,8 +145,8 @@ void tabs_destroy(struct tabs *tabs)
 	free(tabs);
 }
 
-void tab_add(struct tabs *tabs, GtkTreeView *view,
-	     const char *label_text, struct item *item)
+struct tab *tab_add(struct tabs *tabs, GtkTreeView *view,
+		    const char *label_text, struct item *item)
 {
 	GtkWidget *win;
 	struct tab *tab;
@@ -177,6 +177,8 @@ void tab_add(struct tabs *tabs, GtkTreeView *view,
 
 	gtk_widget_show_all(GTK_WIDGET(tab->header_box));
 	gtk_widget_show_all(win);
+
+	return tab;
 }
 
 GtkTreeView *tab_view(struct tabs *tabs, int ind)
