@@ -210,3 +210,8 @@ struct tab *tabs_remove(struct tabs *tabs, int ind)
 
 	return removed;
 }
+
+GtkContainer *tab_image_container(struct tab *tab)
+{
+	return GTK_CONTAINER(tab->image_container);
+}

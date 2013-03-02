@@ -601,6 +601,36 @@ static char *name_with_index(sp_track *track)
 	return buf;
 }
 
+static void load_image_deferred(sp_image *image, void *user_data)
+{
+	GtkContainer *box = GTK_CONTAINER(user_data);
+	GdkPixbufLoader *loader;
+
+	fprintf(stderr, "%s(): image=%p box=%p drawable=%d\n",
+		__func__, image, box, gtk_widget_is_drawable(GTK_WIDGET(box)));
+
+	if (sp_image_format(image) == SP_IMAGE_FORMAT_JPEG) {
+		size_t sz;
+		const void *buf = sp_image_data(image, &sz);
+		loader = gdk_pixbuf_loader_new_with_type("jpeg", (GError **)NULL);
+		if (gdk_pixbuf_loader_write(loader, buf, sz, (GError **)NULL)) {
+			GdkPixbuf *pixbuf = gdk_pixbuf_loader_get_pixbuf(loader);
+			gtk_container_add(box, GTK_WIDGET(gtk_image_new_from_pixbuf(pixbuf)));
+			gtk_widget_show_all(GTK_WIDGET(box));
+		} else {
+			fprintf(stderr, "%s(): gdk_pixbuf_loader_write() failed\n",
+				__func__);
+		}
+		gdk_pixbuf_loader_close(loader, (GError **)NULL);
+		g_object_unref(loader);
+	} else {
+		fprintf(stderr, "%s(): unsupported format %d\n",
+			__func__, sp_image_format(image));
+	}
+
+	g_object_unref(box);
+}
+
 static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userdata)
 {
 	struct albumbrowse *browse = userdata;
@@ -619,6 +649,11 @@ static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userda
 		add_track(browse->store, track, name_with_index(track));
 	}
 
+	sp_image_add_load_callback(sp_image_create(browse->sp_session,
+						   sp_album_cover(sp_albumbrowse_album(sp_browse),
+								  SP_IMAGE_SIZE_SMALL)),
+				   load_image_deferred, browse->image_container);
+
 	sp_albumbrowse_release(sp_browse);
 }
 
@@ -629,6 +664,7 @@ static void expand_album(struct spthui *spthui, sp_album *album)
 	struct item *item;
 	struct albumbrowse *browse;
 	GtkTreeView *view;
+	struct tab *tab;
 
 	browse = malloc(sizeof(*browse));
 	if (browse == NULL) {
@@ -644,9 +680,17 @@ static void expand_album(struct spthui *spthui, sp_album *album)
 	item = item_init_albumbrowse(browse, strdup(sp_album_name(album)));
 
 	view = spthui_list_new(spthui);
-	tab_add(spthui->tabs, view, item_name(item), item);
+	tab = tab_add(spthui->tabs, view, item_name(item), item);
 
 	browse->store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
+	browse->image_container = tab_image_container(tab);
+
+	/* The container will be unreffed by load_image_deferred() which
+	 * is called by expand_album_browse_complete(), the browse cb
+	 */
+	g_object_ref(browse->image_container);
+
+	browse->sp_session = spthui->sp_session;
 
 	fprintf(stderr, "%s(): spthui=%p view=%p album=%p\n", __func__, spthui, view, album);
 }

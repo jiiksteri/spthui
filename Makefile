@@ -24,6 +24,7 @@ LDFLAGS_gtk_common = \
 	-lgobject-2.0 \
 	-lglib-2.0 \
 	-lpango-1.0 \
+	-lgdk_pixbuf-2.0 \
 
 
 CFLAGS_gtk2 = $(CFLAGS_gtk_common) \

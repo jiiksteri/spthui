@@ -26,6 +26,8 @@ struct tab *tab_add(struct tabs *tabs, GtkTreeView *view,
 void tab_destroy(struct tab *tab);
 
 GtkTreeView *tab_view(struct tabs *tabs, int ind);
+GtkContainer *tab_image_container(struct tab *tab);
+
 
 struct tab *tabs_remove(struct tabs *tabs, int ind);
 
