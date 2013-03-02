@@ -8,6 +8,7 @@
 
 #include "item.h"
 #include "titles.h"
+#include "view.h"
 
 static const char *root_names[ITEM__COUNT] = {
 	NULL,                /* ITEM_NONE          */
@@ -48,8 +49,8 @@ static GtkTreeIter *iter_root(struct search *search, enum item_type type)
 		struct item *item = item_init_none(strdup(root_names[type]));
 		gtk_tree_store_append(search->store, &search->root[type], NULL);
 		gtk_tree_store_set(search->store, &search->root[type],
-				   0, item,
-				   1, item_name(item),
+				   COLUMN_OBJECT, item,
+				   COLUMN_NAME, item_name(item),
 				   -1);
 		search->root_set |= (1 << type);
 	}
@@ -65,8 +66,8 @@ static inline void append_to(struct search *search, struct item *item)
 	type = item_type(item);
 	gtk_tree_store_append(search->store, &iter, iter_root(search, type));
 	gtk_tree_store_set(search->store, &iter,
-			   0, item,
-			   1, item_name(item),
+			   COLUMN_OBJECT, item,
+			   COLUMN_NAME, item_name(item),
 			   -1);
 }
 

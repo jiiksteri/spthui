@@ -574,8 +574,8 @@ static void add_track(GtkListStore *store, sp_track *track, char *name)
 
 	gtk_list_store_append(store, &iter);
 	gtk_list_store_set(store, &iter,
-			   0, item,
-			   1, name,
+			   COLUMN_OBJECT, item,
+			   COLUMN_NAME, name,
 			   -1);
 }
 
