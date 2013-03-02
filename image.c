@@ -14,6 +14,47 @@ static GdkPixbuf *scale_to_height(GdkPixbuf *orig, int height)
 	return new;
 }
 
+static GdkPixbuf *load_using(GdkPixbufLoader *loader,
+			     const void *buf, size_t sz,
+			     GError **err)
+{
+	GdkPixbuf *pixbuf;
+
+	if (gdk_pixbuf_loader_write(loader, buf, sz, err)) {
+		/* FIXME: Figure out a sane size */
+		pixbuf = scale_to_height(gdk_pixbuf_loader_get_pixbuf(loader), 16);
+		g_object_ref(pixbuf);
+	} else {
+		pixbuf = NULL;
+	}
+	return pixbuf;
+}
+
+GdkPixbuf *image_load_pixbuf(sp_image *image)
+{
+	GdkPixbuf *pixbuf = NULL;
+	GdkPixbufLoader *loader;
+	GError *err = NULL;
+	const void *buf;
+	size_t sz;
+
+	if (sp_image_format(image) == SP_IMAGE_FORMAT_JPEG) {
+		buf = sp_image_data(image, &sz);
+		loader = gdk_pixbuf_loader_new_with_type("jpeg", &err);
+		if (loader != NULL) {
+			pixbuf = load_using(loader, buf, sz, &err);
+			gdk_pixbuf_loader_close(loader, (GError **)NULL);
+		}
+	}
+
+	if (err != NULL) {
+		fprintf(stderr, "%s(): %s\n", __func__, err->message);
+		g_error_free(err);
+	}
+
+	return pixbuf;
+}
+
 /*
  * loads the specified sp_image and puts it into box as a GtkImage.
  *
@@ -24,22 +65,14 @@ static GdkPixbuf *scale_to_height(GdkPixbuf *orig, int height)
 void image_load_to(sp_image *image, void *container)
 {
 	GtkContainer *box = GTK_CONTAINER(container);
-	GdkPixbufLoader *loader;
+	GdkPixbuf *pixbuf = NULL;
 
 	if (sp_image_format(image) == SP_IMAGE_FORMAT_JPEG) {
-		size_t sz;
-		const void *buf = sp_image_data(image, &sz);
-		loader = gdk_pixbuf_loader_new_with_type("jpeg", (GError **)NULL);
-		if (gdk_pixbuf_loader_write(loader, buf, sz, (GError **)NULL)) {
-			/* FIXME: Figure out a sane size */
-			GdkPixbuf *pixbuf = scale_to_height(gdk_pixbuf_loader_get_pixbuf(loader), 16);
+		pixbuf = image_load_pixbuf(image);
+		if (pixbuf != NULL) {
 			gtk_container_add(box, GTK_WIDGET(gtk_image_new_from_pixbuf(pixbuf)));
 			gtk_widget_show_all(GTK_WIDGET(box));
-		} else {
-			fprintf(stderr, "%s(): gdk_pixbuf_loader_write() failed\n",
-				__func__);
 		}
-		gdk_pixbuf_loader_close(loader, (GError **)NULL);
 	} else {
 		fprintf(stderr, "%s(): unsupported format %d\n",
 			__func__, sp_image_format(image));
