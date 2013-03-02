@@ -836,7 +836,7 @@ static void setup_tabs(struct spthui *spthui)
 {
 	GtkTreeView *view;
 
-	spthui->tabs = tabs_init(&tabs_ops, spthui);
+	spthui->tabs = tabs_init(&tabs_ops, spthui->sp_session, spthui);
 
 	view = spthui_list_new(spthui);
 	tab_add(spthui->tabs, view, "Playlists", item_init_none(strdup("Playlists")));

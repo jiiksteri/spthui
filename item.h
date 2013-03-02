@@ -42,6 +42,9 @@ void item_free(struct item *item);
 enum item_type item_type(struct item *item);
 const char *item_name(struct item *item);
 
+int item_has_image(struct item *item);
+void item_load_image(struct item *item, sp_session *sp_session,
+		     image_loaded_cb *cb, void *cb_data);
 
 sp_track *item_track(struct item *item);
 sp_playlist *item_playlist(struct item *item);

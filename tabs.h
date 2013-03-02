@@ -2,6 +2,8 @@
 #define TABS_H__INCLUDED
 
 #include <gtk/gtk.h>
+#include <libspotify/api.h>
+
 #include "item.h"
 
 struct tabs;
@@ -11,7 +13,7 @@ struct tabs_ops {
 	void (*close_cb)(struct tabs *tabs, int page_num, void *userdata);
 };
 
-struct tabs *tabs_init(struct tabs_ops *ops, void *userdata);
+struct tabs *tabs_init(struct tabs_ops *ops, sp_session *sp_session, void *userdata);
 void tabs_destroy(struct tabs *tabs);
 
 

@@ -5,7 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <gtk/gtk.h>
+#include <libspotify/api.h>
 
+#include "compat_gtk.h"
 
 struct tabs {
 	GtkNotebook *tabs;
@@ -14,6 +16,9 @@ struct tabs {
 
 	struct tabs_ops *ops;
 	void *userdata;
+
+	sp_session *sp_session;
+
 };
 
 GtkWidget *tabs_widget(struct tabs *tabs)
@@ -42,7 +47,7 @@ static void close_selected_tab_trampoline(GtkButton *btn, void *userdata)
 }
 
 
-struct tabs *tabs_init(struct tabs_ops *ops, void *userdata)
+struct tabs *tabs_init(struct tabs_ops *ops, sp_session *sp_session, void *userdata)
 {
 	struct tabs *tabs;
 	GtkButton *btn;
@@ -51,6 +56,7 @@ struct tabs *tabs_init(struct tabs_ops *ops, void *userdata)
 	memset(tabs, 0, sizeof(*tabs));
 
 	tabs->ops = ops;
+	tabs->sp_session = sp_session;
 	tabs->userdata = userdata;
 
 	tabs->tabs = GTK_NOTEBOOK(gtk_notebook_new());
@@ -89,6 +95,31 @@ void tabs_destroy(struct tabs *tabs)
 	free(tabs);
 }
 
+static void report_image_loaded(sp_image *image, void *user_data)
+{
+	fprintf(stderr, "%s(): NOT IMPLEMENTED: image=%p user_data=%p\n",
+		__func__, image, user_data);
+}
+
+static GtkWidget *setup_tab_label(sp_session *sp_session, struct item *item, const char *label_text)
+{
+	GtkWidget *label, *box;
+
+	label = gtk_label_new(label_text);
+	gtk_label_set_max_width_chars(GTK_LABEL(label), 10);
+
+	if (item_has_image(item)) {
+		box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+		item_load_image(item, sp_session, report_image_loaded, box);
+		/* FIXME: prepare the image widget and add it here */
+		gtk_box_pack_start(GTK_BOX(box), label, FALSE, FALSE, 0);
+		label = box;
+	}
+
+	return label;
+
+}
+
 void tab_add(struct tabs *tabs, GtkTreeView *view,
 	     const char *label_text, struct item *item)
 {
@@ -103,8 +134,7 @@ void tab_add(struct tabs *tabs, GtkTreeView *view,
 
 	gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(view));
 
-	label = gtk_label_new(label_text);
-	gtk_label_set_max_width_chars(GTK_LABEL(label), 10);
+	label = setup_tab_label(tabs->sp_session, item, label_text);
 
 	n_pages = gtk_notebook_get_n_pages(tabs->tabs);
 	if (n_pages >= tabs->n_tab_items) {
