@@ -27,6 +27,7 @@
 #include "view.h"
 #include "albumbrowse.h"
 #include "tabs.h"
+#include "image.h"
 
 enum spthui_state {
 	STATE_RUNNING,
@@ -601,46 +602,6 @@ static char *name_with_index(sp_track *track)
 	return buf;
 }
 
-static GdkPixbuf *scale_to_height(GdkPixbuf *orig, int height)
-{
-	GdkPixbuf *new;
-	int width;
-
-	width = gdk_pixbuf_get_width(orig) * height / gdk_pixbuf_get_height(orig);
-
-	new = gdk_pixbuf_scale_simple(orig, width, height, GDK_INTERP_BILINEAR);
-
-	g_object_unref(orig);
-	return new;
-}
-
-static void load_image_deferred(sp_image *image, void *user_data)
-{
-	GtkContainer *box = GTK_CONTAINER(user_data);
-	GdkPixbufLoader *loader;
-
-	if (sp_image_format(image) == SP_IMAGE_FORMAT_JPEG) {
-		size_t sz;
-		const void *buf = sp_image_data(image, &sz);
-		loader = gdk_pixbuf_loader_new_with_type("jpeg", (GError **)NULL);
-		if (gdk_pixbuf_loader_write(loader, buf, sz, (GError **)NULL)) {
-			/* FIXME: Figure out a sane size */
-			GdkPixbuf *pixbuf = scale_to_height(gdk_pixbuf_loader_get_pixbuf(loader), 16);
-			gtk_container_add(box, GTK_WIDGET(gtk_image_new_from_pixbuf(pixbuf)));
-			gtk_widget_show_all(GTK_WIDGET(box));
-		} else {
-			fprintf(stderr, "%s(): gdk_pixbuf_loader_write() failed\n",
-				__func__);
-		}
-		gdk_pixbuf_loader_close(loader, (GError **)NULL);
-	} else {
-		fprintf(stderr, "%s(): unsupported format %d\n",
-			__func__, sp_image_format(image));
-	}
-
-	g_object_unref(box);
-}
-
 static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userdata)
 {
 	struct albumbrowse *browse = userdata;
@@ -662,7 +623,7 @@ static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userda
 	sp_image_add_load_callback(sp_image_create(browse->sp_session,
 						   sp_album_cover(sp_albumbrowse_album(sp_browse),
 								  SP_IMAGE_SIZE_SMALL)),
-				   load_image_deferred, browse->image_container);
+				   image_load_to, browse->image_container);
 
 	sp_albumbrowse_release(sp_browse);
 }

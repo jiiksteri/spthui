@@ -70,6 +70,7 @@ spthui: audio.o \
 	login_dialog.o \
 	tabs.o \
 	search.o \
+	image.o \
 	spthui.o
 
 clean:
