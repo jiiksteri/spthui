@@ -9,6 +9,7 @@
 #include "item.h"
 #include "titles.h"
 #include "view.h"
+#include "image.h"
 
 static const char *root_names[ITEM__COUNT] = {
 	NULL,                /* ITEM_NONE          */
@@ -58,8 +59,30 @@ static GtkTreeIter *iter_root(struct search *search, enum item_type type)
 	return &search->root[type];
 }
 
+struct image_load_ctx {
+	GtkTreeStore *store;
+	GtkTreeIter iter;
+};
+
+static void image_loaded(sp_image *image, void *user_data)
+{
+	struct image_load_ctx *image_load_ctx = user_data;
+	GdkPixbuf *pixbuf;
+
+	pixbuf = image_load_pixbuf(image);
+
+	gtk_tree_store_set(image_load_ctx->store,
+			   &image_load_ctx->iter,
+			   COLUMN_IMAGE, pixbuf,
+			   -1);
+
+	g_object_unref(image_load_ctx->store);
+	free(image_load_ctx);
+}
+
 static inline void append_to(struct search *search, struct item *item)
 {
+	struct image_load_ctx *image_load_ctx;
 	GtkTreeIter iter;
 	enum item_type type;
 
@@ -69,6 +92,17 @@ static inline void append_to(struct search *search, struct item *item)
 			   COLUMN_OBJECT, item,
 			   COLUMN_NAME, item_name(item),
 			   -1);
+
+	if (item_has_image(item)) {
+		image_load_ctx = malloc(sizeof(*image_load_ctx));
+		if (image_load_ctx != NULL) {
+			g_object_ref(search->store);
+			image_load_ctx->store = search->store;
+			image_load_ctx->iter = iter;
+			item_load_image(item, search->sp_session,
+					image_loaded, image_load_ctx);
+		}
+	}
 }
 
 static void search_complete(sp_search *sp_search, void *userdata)

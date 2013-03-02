@@ -12,6 +12,7 @@
 static GType list_columns[] = {
 	[COLUMN_OBJECT] = G_TYPE_POINTER, /* item itself */
 	[COLUMN_NAME] = G_TYPE_STRING,  /* item name */
+	[COLUMN_IMAGE] = G_TYPE_OBJECT,
 };
 
 
@@ -165,6 +166,13 @@ GtkTreeView *view_new_with_model(model_ctor model_ctor, struct view_ops *ops, vo
 	model = model_ctor(n_columns, list_columns);
 	view = GTK_TREE_VIEW(gtk_tree_view_new_with_model(model));
 	gtk_tree_view_set_headers_visible(view, FALSE);
+
+	column = gtk_tree_view_column_new_with_attributes("Image",
+							  gtk_cell_renderer_pixbuf_new(),
+							  "pixbuf", COLUMN_IMAGE,
+							  NULL);
+	gtk_tree_view_append_column(view, column);
+
 
 	column = gtk_tree_view_column_new_with_attributes("Item",
 							  gtk_cell_renderer_text_new(),

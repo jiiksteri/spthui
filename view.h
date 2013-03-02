@@ -5,6 +5,7 @@
 enum {
 	COLUMN_OBJECT,
 	COLUMN_NAME,
+	COLUMN_IMAGE,
 };
 
 struct view_ops {
