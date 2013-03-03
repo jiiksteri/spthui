@@ -90,6 +90,7 @@ struct item *item_init_albumbrowse(struct albumbrowse *browse, char *name)
 static void albumbrowse_free(struct albumbrowse *browse)
 {
 	sp_albumbrowse_release(browse->browse);
+	free(browse);
 }
 
 void item_free(struct item *item)
