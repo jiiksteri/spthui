@@ -140,6 +140,7 @@ static struct tab *tab_init(sp_session *sp_session, struct item *item,
 void tab_destroy(struct tab *tab)
 {
 	item_free(tab->item);
+	free(tab);
 }
 
 void tabs_destroy(struct tabs *tabs)
