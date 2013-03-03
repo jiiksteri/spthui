@@ -67,6 +67,8 @@ struct tabs *tabs_init(struct tabs_ops *ops, sp_session *sp_session, void *userd
 	tabs->userdata = userdata;
 
 	tabs->tabs = GTK_NOTEBOOK(gtk_notebook_new());
+	gtk_notebook_set_scrollable(tabs->tabs, TRUE);
+
 	tabs->tab_items = malloc(5 * sizeof(*tabs->tab_items));
 
 	btn = GTK_BUTTON(gtk_button_new());
