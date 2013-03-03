@@ -705,7 +705,6 @@ static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, voi
 {
 	GtkTreeModel *model;
 	struct item *item;
-	char *name;
 	GtkTreeIter iter;
 
 	fprintf(stderr, "%s(): widget=%p(%s) button=%u user_data=%p\n",
@@ -716,9 +715,8 @@ static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, voi
 			model = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
 			gtk_tree_model_get(model, &iter,
 					   COLUMN_OBJECT, &item,
-					   COLUMN_NAME, &name,
 					   -1);
-			popup_show(item, name, event->button, event->time,
+			popup_show(item, item_name(item), event->button, event->time,
 				   expand_item, user_data);
 		} else {
 			fprintf(stderr, "%s(): nothing selected\n", __func__);
