@@ -667,14 +667,15 @@ static void expand_album(struct spthui *spthui, sp_album *album)
 }
 
 /* Called with both GDK and spthui_lock() held. */
-static void expand_playlist(struct spthui *spthui, struct item *item)
+static void expand_playlist(struct spthui *spthui, sp_playlist *pl)
 {
 	GtkTreeView *view;
+	struct item *item;
 
 	view = spthui_list_new(spthui);
+	item = item_init_playlist(pl, strdup(sp_playlist_name(pl)));
 	tab_add(spthui->tabs, view, item_name(item), item);
-	playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)),
-			     item_playlist(item));
+	playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)), pl);
 }
 
 static void expand_item(struct item *item, void *user_data)
@@ -686,7 +687,7 @@ static void expand_item(struct item *item, void *user_data)
 	fprintf(stderr, "%s(): item=%p\n", __func__, item);
 	switch (item_type(item)) {
 	case ITEM_PLAYLIST:
-		expand_playlist(spthui, item);
+		expand_playlist(spthui, item_playlist(item));
 		break;
 	case ITEM_ALBUM:
 		expand_album(spthui, item_album(item));
