@@ -23,7 +23,6 @@ static GdkPixbuf *load_using(GdkPixbufLoader *loader,
 	if (gdk_pixbuf_loader_write(loader, buf, sz, err)) {
 		/* FIXME: Figure out a sane size */
 		pixbuf = scale_to_height(gdk_pixbuf_loader_get_pixbuf(loader), 16);
-		g_object_ref(pixbuf);
 	} else {
 		pixbuf = NULL;
 	}
@@ -72,12 +71,14 @@ void image_load_to(sp_image *image, void *container)
 		if (pixbuf != NULL) {
 			gtk_container_add(box, GTK_WIDGET(gtk_image_new_from_pixbuf(pixbuf)));
 			gtk_widget_show_all(GTK_WIDGET(box));
+			g_object_unref(pixbuf);
 		}
 	} else {
 		fprintf(stderr, "%s(): unsupported format %d\n",
 			__func__, sp_image_format(image));
 	}
 
+	sp_image_release(image);
 	g_object_unref(box);
 }
 
