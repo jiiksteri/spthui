@@ -74,6 +74,7 @@ gboolean store_image_to_column(void *data)
 			   COLUMN_IMAGE, ctx->pixbuf,
 			   -1);
 
+	g_object_unref(ctx->pixbuf);
 	g_object_unref(ctx->store);
 	free(ctx);
 
