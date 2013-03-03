@@ -62,22 +62,30 @@ static GtkTreeIter *iter_root(struct search *search, enum item_type type)
 struct image_load_ctx {
 	GtkTreeStore *store;
 	GtkTreeIter iter;
+	GdkPixbuf *pixbuf;
 };
+
+gboolean store_image_to_column(void *data)
+{
+	struct image_load_ctx *ctx = data;
+
+	gtk_tree_store_set(ctx->store,
+			   &ctx->iter,
+			   COLUMN_IMAGE, ctx->pixbuf,
+			   -1);
+
+	g_object_unref(ctx->store);
+	free(ctx);
+
+	return FALSE;
+}
 
 static void image_loaded(sp_image *image, void *user_data)
 {
 	struct image_load_ctx *image_load_ctx = user_data;
-	GdkPixbuf *pixbuf;
 
-	pixbuf = image_load_pixbuf(image);
-
-	gtk_tree_store_set(image_load_ctx->store,
-			   &image_load_ctx->iter,
-			   COLUMN_IMAGE, pixbuf,
-			   -1);
-
-	g_object_unref(image_load_ctx->store);
-	free(image_load_ctx);
+	image_load_ctx->pixbuf = image_load_pixbuf(image);
+	gdk_threads_add_idle(store_image_to_column, image_load_ctx);
 }
 
 static inline void append_to(struct search *search, struct item *item)
