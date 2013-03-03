@@ -12,9 +12,14 @@ struct item {
 	enum item_type type;
 	void *item;
 	char *name;
+
+	sp_session *sp_session;
+	int have_image;
+	byte image_id[20];
 };
 
-static struct item *item_init(enum item_type type, void *p, char *name)
+static struct item *item_init_with_image(enum item_type type, void *p, char *name,
+					 const byte *image_id)
 {
 	struct item *item;
 
@@ -22,9 +27,18 @@ static struct item *item_init(enum item_type type, void *p, char *name)
 		item->type = type;
 		item->item = p;
 		item->name = name;
+		item->have_image = image_id != NULL;
+		if (item->have_image) {
+			memcpy(item->image_id, image_id, sizeof(item->image_id));
+		}
 	}
 
 	return item;
+}
+
+static struct item *item_init(enum item_type type, void *p, char *name)
+{
+	return item_init_with_image(type, p, name, (byte *)NULL);
 }
 
 struct item *item_init_playlist(sp_playlist *pl, char *name)
@@ -57,8 +71,11 @@ struct item *item_init_artist(sp_artist *artist)
 
 struct item *item_init_album(sp_album *album, char *name)
 {
+	const byte *cover;
+
 	sp_album_add_ref(album);
-	return item_init(ITEM_ALBUM, album, name);
+	cover = sp_album_cover(album, SP_IMAGE_SIZE_SMALL);
+	return item_init_with_image(ITEM_ALBUM, album, name, cover);
 }
 
 struct item *item_init_albumbrowse(struct albumbrowse *browse, char *name)
@@ -147,4 +164,21 @@ sp_album *item_album(struct item *item)
 {
 	assert(item->type == ITEM_ALBUM);
 	return item->item;
+}
+
+int item_has_image(struct item *item)
+{
+	return item->have_image;
+}
+
+void item_load_image(struct item *item, sp_session *sp_session,
+		     image_loaded_cb *cb, void *cb_data)
+{
+	sp_image *image;
+
+	image = sp_image_create(sp_session, item->image_id);
+	/* Will the callback fire even if the image is already loaded
+	 * or do we have to do it by hand?
+	 */
+	sp_image_add_load_callback(image, cb, cb_data);
 }

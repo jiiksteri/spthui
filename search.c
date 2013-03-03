@@ -8,6 +8,8 @@
 
 #include "item.h"
 #include "titles.h"
+#include "view.h"
+#include "image.h"
 
 static const char *root_names[ITEM__COUNT] = {
 	NULL,                /* ITEM_NONE          */
@@ -48,8 +50,8 @@ static GtkTreeIter *iter_root(struct search *search, enum item_type type)
 		struct item *item = item_init_none(strdup(root_names[type]));
 		gtk_tree_store_append(search->store, &search->root[type], NULL);
 		gtk_tree_store_set(search->store, &search->root[type],
-				   0, item,
-				   1, item_name(item),
+				   COLUMN_OBJECT, item,
+				   COLUMN_NAME, item_name(item),
 				   -1);
 		search->root_set |= (1 << type);
 	}
@@ -57,17 +59,58 @@ static GtkTreeIter *iter_root(struct search *search, enum item_type type)
 	return &search->root[type];
 }
 
+struct image_load_ctx {
+	GtkTreeStore *store;
+	GtkTreeIter iter;
+	GdkPixbuf *pixbuf;
+};
+
+gboolean store_image_to_column(void *data)
+{
+	struct image_load_ctx *ctx = data;
+
+	gtk_tree_store_set(ctx->store,
+			   &ctx->iter,
+			   COLUMN_IMAGE, ctx->pixbuf,
+			   -1);
+
+	g_object_unref(ctx->store);
+	free(ctx);
+
+	return FALSE;
+}
+
+static void image_loaded(sp_image *image, void *user_data)
+{
+	struct image_load_ctx *image_load_ctx = user_data;
+
+	image_load_ctx->pixbuf = image_load_pixbuf(image);
+	gdk_threads_add_idle(store_image_to_column, image_load_ctx);
+}
+
 static inline void append_to(struct search *search, struct item *item)
 {
+	struct image_load_ctx *image_load_ctx;
 	GtkTreeIter iter;
 	enum item_type type;
 
 	type = item_type(item);
 	gtk_tree_store_append(search->store, &iter, iter_root(search, type));
 	gtk_tree_store_set(search->store, &iter,
-			   0, item,
-			   1, item_name(item),
+			   COLUMN_OBJECT, item,
+			   COLUMN_NAME, item_name(item),
 			   -1);
+
+	if (item_has_image(item)) {
+		image_load_ctx = malloc(sizeof(*image_load_ctx));
+		if (image_load_ctx != NULL) {
+			g_object_ref(search->store);
+			image_load_ctx->store = search->store;
+			image_load_ctx->iter = iter;
+			item_load_image(item, search->sp_session,
+					image_loaded, image_load_ctx);
+		}
+	}
 }
 
 static void search_complete(sp_search *sp_search, void *userdata)

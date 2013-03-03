@@ -5,15 +5,27 @@
 #include <stdlib.h>
 #include <string.h>
 #include <gtk/gtk.h>
+#include <libspotify/api.h>
 
+#include "compat_gtk.h"
+
+struct tab {
+	struct item *item;
+
+	GtkBox *header_box;
+	GtkWidget *image_container;
+};
 
 struct tabs {
 	GtkNotebook *tabs;
-	struct item **tab_items;
+	struct tab **tab_items;
 	int n_tab_items;
 
 	struct tabs_ops *ops;
 	void *userdata;
+
+	sp_session *sp_session;
+
 };
 
 GtkWidget *tabs_widget(struct tabs *tabs)
@@ -42,7 +54,7 @@ static void close_selected_tab_trampoline(GtkButton *btn, void *userdata)
 }
 
 
-struct tabs *tabs_init(struct tabs_ops *ops, void *userdata)
+struct tabs *tabs_init(struct tabs_ops *ops, sp_session *sp_session, void *userdata)
 {
 	struct tabs *tabs;
 	GtkButton *btn;
@@ -51,6 +63,7 @@ struct tabs *tabs_init(struct tabs_ops *ops, void *userdata)
 	memset(tabs, 0, sizeof(*tabs));
 
 	tabs->ops = ops;
+	tabs->sp_session = sp_session;
 	tabs->userdata = userdata;
 
 	tabs->tabs = GTK_NOTEBOOK(gtk_notebook_new());
@@ -76,24 +89,78 @@ struct tabs *tabs_init(struct tabs_ops *ops, void *userdata)
 
 }
 
+static void report_image_loaded(sp_image *image, void *user_data)
+{
+	GtkWidget *box = user_data;
+
+	fprintf(stderr, "%s(): NOT IMPLEMENTED: image=%p box=%p drawable=%d\n",
+		__func__, image, box, gtk_widget_is_drawable(box));
+
+	g_object_unref(box);
+}
+
+static inline GtkWidget *pad_right(GtkWidget *widget, int amount)
+{
+	GtkWidget *align;
+
+	align = gtk_alignment_new(0.5, 0.5, 0.5, 0.5);
+	gtk_alignment_set_padding(GTK_ALIGNMENT(align), 0, 0, 0, amount);
+	gtk_container_add(GTK_CONTAINER(align), widget);
+	return align;
+}
+
+static struct tab *tab_init(sp_session *sp_session, struct item *item,
+			    const char *label_text)
+{
+	struct tab *tab;
+	GtkWidget *label;
+
+	tab = malloc(sizeof(*tab));
+	memset(tab, 0, sizeof(*tab));
+
+	tab->item = item;
+
+	label = gtk_label_new(label_text);
+	gtk_label_set_max_width_chars(GTK_LABEL(label), 10);
+
+	tab->header_box = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
+	tab->image_container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_box_pack_start(tab->header_box, pad_right(tab->image_container, 10), FALSE, FALSE, 0);
+	gtk_box_pack_start(tab->header_box, label, FALSE, FALSE, 0);
+
+	if (item_has_image(item)) {
+		g_object_ref_sink(tab->header_box);
+		item_load_image(item, sp_session,
+				report_image_loaded, tab->header_box);
+	}
+
+	return tab;
+}
+
+void tab_destroy(struct tab *tab)
+{
+	item_free(tab->item);
+	free(tab);
+}
+
 void tabs_destroy(struct tabs *tabs)
 {
 	int i;
 
 	if (tabs->tab_items != NULL) {
 		for (i = 0; tabs->tab_items[i]; i++) {
-			item_free(tabs->tab_items[i]);
+			tab_destroy(tabs->tab_items[i]);
 		}
 		free(tabs->tab_items);
 	}
 	free(tabs);
 }
 
-void tab_add(struct tabs *tabs, GtkTreeView *view,
-	     const char *label_text, struct item *item)
+struct tab *tab_add(struct tabs *tabs, GtkTreeView *view,
+		    const char *label_text, struct item *item)
 {
 	GtkWidget *win;
-	GtkWidget *label;
+	struct tab *tab;
 	int n_pages;
 
 	win = gtk_scrolled_window_new(NULL, NULL);
@@ -102,9 +169,6 @@ void tab_add(struct tabs *tabs, GtkTreeView *view,
 				       GTK_POLICY_AUTOMATIC);
 
 	gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(view));
-
-	label = gtk_label_new(label_text);
-	gtk_label_set_max_width_chars(GTK_LABEL(label), 10);
 
 	n_pages = gtk_notebook_get_n_pages(tabs->tabs);
 	if (n_pages >= tabs->n_tab_items) {
@@ -117,13 +181,18 @@ void tab_add(struct tabs *tabs, GtkTreeView *view,
 
 	}
 
-	tabs->tab_items[n_pages] = item;
-	gtk_notebook_append_page(tabs->tabs, win, label);
+	tab = tab_init(tabs->sp_session, item, label_text);
+	tabs->tab_items[n_pages] = tab;
 
+	gtk_notebook_append_page(tabs->tabs, win, GTK_WIDGET(tab->header_box));
+
+	gtk_widget_show_all(GTK_WIDGET(tab->header_box));
 	gtk_widget_show_all(win);
+
+	return tab;
 }
 
-GtkTreeView *tab_get(struct tabs *tabs, int ind)
+GtkTreeView *tab_view(struct tabs *tabs, int ind)
 {
 	GList *children;
 	GtkTreeView *tab;
@@ -136,9 +205,9 @@ GtkTreeView *tab_get(struct tabs *tabs, int ind)
 	return tab;
 }
 
-struct item *tabs_remove(struct tabs *tabs, int ind)
+struct tab *tabs_remove(struct tabs *tabs, int ind)
 {
-	struct item *removed;
+	struct tab *removed;
 
 	gtk_notebook_remove_page(tabs->tabs, ind);
 
@@ -151,4 +220,9 @@ struct item *tabs_remove(struct tabs *tabs, int ind)
 	}
 
 	return removed;
+}
+
+GtkContainer *tab_image_container(struct tab *tab)
+{
+	return GTK_CONTAINER(tab->image_container);
 }

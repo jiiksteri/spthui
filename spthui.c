@@ -27,6 +27,7 @@
 #include "view.h"
 #include "albumbrowse.h"
 #include "tabs.h"
+#include "image.h"
 
 enum spthui_state {
 	STATE_RUNNING,
@@ -207,7 +208,7 @@ static gboolean add_pl_or_name(struct pl_find_ctx *ctx)
 	GtkListStore *store;
 	GtkTreeView *view;
 
-	view = tab_get(ctx->tabs, ctx->tab_ind);
+	view = tab_view(ctx->tabs, ctx->tab_ind);
 	store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
 
 	gtk_tree_model_foreach(GTK_TREE_MODEL(store), pl_find_foreach, ctx);
@@ -573,8 +574,8 @@ static void add_track(GtkListStore *store, sp_track *track, char *name)
 
 	gtk_list_store_append(store, &iter);
 	gtk_list_store_set(store, &iter,
-			   0, item,
-			   1, name,
+			   COLUMN_OBJECT, item,
+			   COLUMN_NAME, name,
 			   -1);
 }
 
@@ -619,6 +620,11 @@ static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userda
 		add_track(browse->store, track, name_with_index(track));
 	}
 
+	sp_image_add_load_callback(sp_image_create(browse->sp_session,
+						   sp_album_cover(sp_albumbrowse_album(sp_browse),
+								  SP_IMAGE_SIZE_SMALL)),
+				   image_load_to, browse->image_container);
+
 	sp_albumbrowse_release(sp_browse);
 }
 
@@ -629,6 +635,7 @@ static void expand_album(struct spthui *spthui, sp_album *album)
 	struct item *item;
 	struct albumbrowse *browse;
 	GtkTreeView *view;
+	struct tab *tab;
 
 	browse = malloc(sizeof(*browse));
 	if (browse == NULL) {
@@ -644,22 +651,31 @@ static void expand_album(struct spthui *spthui, sp_album *album)
 	item = item_init_albumbrowse(browse, strdup(sp_album_name(album)));
 
 	view = spthui_list_new(spthui);
-	tab_add(spthui->tabs, view, item_name(item), item);
+	tab = tab_add(spthui->tabs, view, item_name(item), item);
 
 	browse->store = GTK_LIST_STORE(gtk_tree_view_get_model(view));
+	browse->image_container = tab_image_container(tab);
+
+	/* The container will be unreffed by load_image_deferred() which
+	 * is called by expand_album_browse_complete(), the browse cb
+	 */
+	g_object_ref(browse->image_container);
+
+	browse->sp_session = spthui->sp_session;
 
 	fprintf(stderr, "%s(): spthui=%p view=%p album=%p\n", __func__, spthui, view, album);
 }
 
 /* Called with both GDK and spthui_lock() held. */
-static void expand_playlist(struct spthui *spthui, struct item *item)
+static void expand_playlist(struct spthui *spthui, sp_playlist *pl)
 {
 	GtkTreeView *view;
+	struct item *item;
 
 	view = spthui_list_new(spthui);
+	item = item_init_playlist(pl, strdup(sp_playlist_name(pl)));
 	tab_add(spthui->tabs, view, item_name(item), item);
-	playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)),
-			     item_playlist(item));
+	playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)), pl);
 }
 
 static void expand_item(struct item *item, void *user_data)
@@ -671,7 +687,7 @@ static void expand_item(struct item *item, void *user_data)
 	fprintf(stderr, "%s(): item=%p\n", __func__, item);
 	switch (item_type(item)) {
 	case ITEM_PLAYLIST:
-		expand_playlist(spthui, item);
+		expand_playlist(spthui, item_playlist(item));
 		break;
 	case ITEM_ALBUM:
 		expand_album(spthui, item_album(item));
@@ -802,7 +818,7 @@ static void close_selected_tab(struct tabs *tabs, int current, void *userdata)
 		 * and we have a track playing off it, stop playback
 		 * and clear ->current_{view,track}
 		 */
-		if (tab_get(spthui->tabs, current) == spthui->current_view) {
+		if (tab_view(spthui->tabs, current) == spthui->current_view) {
 
 			spthui_lock(spthui);
 			spthui->current_track = NULL;
@@ -815,7 +831,7 @@ static void close_selected_tab(struct tabs *tabs, int current, void *userdata)
 			spthui_unlock(spthui);
 		}
 
-		tabs_remove(spthui->tabs, current);
+		tab_destroy(tabs_remove(spthui->tabs, current));
 	}
 }
 
@@ -824,7 +840,7 @@ static void switch_page(struct tabs *tabs, unsigned int page_num, void *userdata
 	struct spthui *spthui = userdata;
 
 	fprintf(stderr, "%s(): %d\n", __func__, page_num);
-	spthui->selected_view = tab_get(tabs, page_num);
+	spthui->selected_view = tab_view(tabs, page_num);
 }
 
 static struct tabs_ops tabs_ops = {
@@ -836,7 +852,7 @@ static void setup_tabs(struct spthui *spthui)
 {
 	GtkTreeView *view;
 
-	spthui->tabs = tabs_init(&tabs_ops, spthui);
+	spthui->tabs = tabs_init(&tabs_ops, spthui->sp_session, spthui);
 
 	view = spthui_list_new(spthui);
 	tab_add(spthui->tabs, view, "Playlists", item_init_none(strdup("Playlists")));
