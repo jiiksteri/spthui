@@ -4,6 +4,7 @@
 #include <libspotify/api.h>
 #include "search.h"
 #include "albumbrowse.h"
+#include "artistbrowse.h"
 
 enum item_type {
 	ITEM_NONE,
@@ -13,6 +14,7 @@ enum item_type {
 	ITEM_ARTIST,
 	ITEM_ALBUM,
 	ITEM_ALBUMBROWSE,
+	ITEM_ARTISTBROWSE,
 
 	ITEM__COUNT,
 };
@@ -36,6 +38,7 @@ struct item *item_init_search(struct search *search);
 struct item *item_init_artist(sp_artist *artist);
 struct item *item_init_album(sp_album *album, char *name);
 struct item *item_init_albumbrowse(struct albumbrowse *browse, char *name);
+struct item *item_init_artistbrowse(struct artistbrowse *browse, char *name);
 
 void item_free(struct item *item);
 

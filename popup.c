@@ -115,6 +115,7 @@ static void setup_menu_for_item(struct popup *popup,
 	case ITEM_NONE:
 	case ITEM_SEARCH:
 	case ITEM_ARTIST:
+	case ITEM_ARTISTBROWSE:
 		break;
 
 	case ITEM_ALBUM:
