@@ -10,7 +10,7 @@ struct artistbrowse {
 
 	GtkContainer *portrait;
 	GtkContainer *bio;
-	GtkTreeView *track_view;
+	GtkTreeView *albums;
 };
 
 #endif
