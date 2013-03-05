@@ -162,8 +162,8 @@ void tabs_destroy(struct tabs *tabs)
 	free(tabs);
 }
 
-struct tab *tab_add(struct tabs *tabs, GtkTreeView *view,
-		    const char *label_text, struct item *item)
+struct tab *tab_add_full(struct tabs *tabs, GtkScrollable *root, GtkTreeView *view,
+			 const char *label_text, struct item *item)
 {
 	GtkWidget *win;
 	struct tab *tab;
@@ -174,7 +174,7 @@ struct tab *tab_add(struct tabs *tabs, GtkTreeView *view,
 				       GTK_POLICY_AUTOMATIC,
 				       GTK_POLICY_AUTOMATIC);
 
-	gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(view));
+	gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(root));
 
 	n_pages = gtk_notebook_get_n_pages(tabs->tabs);
 	if (n_pages >= tabs->n_tab_items) {
@@ -196,6 +196,12 @@ struct tab *tab_add(struct tabs *tabs, GtkTreeView *view,
 	gtk_widget_show_all(win);
 
 	return tab;
+}
+
+struct tab *tab_add(struct tabs *tabs, GtkTreeView *view,
+		    const char *label_text, struct item *item)
+{
+	return tab_add_full(tabs, GTK_SCROLLABLE(view), view, label_text, item);
 }
 
 GtkTreeView *tab_view(struct tabs *tabs, int ind)
