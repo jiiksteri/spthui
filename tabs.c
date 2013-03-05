@@ -11,6 +11,7 @@
 
 struct tab {
 	struct item *item;
+	GtkTreeView *view;
 
 	GtkBox *header_box;
 	GtkWidget *image_container;
@@ -112,7 +113,7 @@ static inline GtkWidget *pad_right(GtkWidget *widget, int amount)
 }
 
 static struct tab *tab_init(sp_session *sp_session, struct item *item,
-			    const char *label_text)
+			    const char *label_text, GtkTreeView *view)
 {
 	struct tab *tab;
 	GtkWidget *label;
@@ -121,6 +122,8 @@ static struct tab *tab_init(sp_session *sp_session, struct item *item,
 	memset(tab, 0, sizeof(*tab));
 
 	tab->item = item;
+	tab->view = view;
+	g_object_ref(tab->view);
 
 	label = gtk_label_new(label_text);
 	gtk_label_set_max_width_chars(GTK_LABEL(label), 10);
@@ -142,6 +145,7 @@ static struct tab *tab_init(sp_session *sp_session, struct item *item,
 void tab_destroy(struct tab *tab)
 {
 	item_free(tab->item);
+	g_object_unref(tab->view);
 	free(tab);
 }
 
@@ -183,7 +187,7 @@ struct tab *tab_add(struct tabs *tabs, GtkTreeView *view,
 
 	}
 
-	tab = tab_init(tabs->sp_session, item, label_text);
+	tab = tab_init(tabs->sp_session, item, label_text, view);
 	tabs->tab_items[n_pages] = tab;
 
 	gtk_notebook_append_page(tabs->tabs, win, GTK_WIDGET(tab->header_box));
@@ -196,15 +200,7 @@ struct tab *tab_add(struct tabs *tabs, GtkTreeView *view,
 
 GtkTreeView *tab_view(struct tabs *tabs, int ind)
 {
-	GList *children;
-	GtkTreeView *tab;
-	GtkWidget *page;
-
-	page = gtk_notebook_get_nth_page(tabs->tabs, ind);
-	children = gtk_container_get_children(GTK_CONTAINER(page));
-	tab = GTK_TREE_VIEW(children->data);
-	g_list_free(children);
-	return tab;
+	return tabs->tab_items[ind]->view;
 }
 
 struct tab *tabs_remove(struct tabs *tabs, int ind)
