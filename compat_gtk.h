@@ -18,6 +18,10 @@ static inline GtkWidget *gtk_box_new(GtkOrientation orientation, int spacing)
 
 	return box;
 }
+
+typedef GtkViewport GtkScrollable;
+#define GTK_SCROLLABLE(w) GTK_VIEWPORT(w)
+
 #endif /* GTK_MAJOR_VERSION < 3 */
 
 

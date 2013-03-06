@@ -5,6 +5,7 @@
 #include <libspotify/api.h>
 
 #include "item.h"
+#include "compat_gtk.h"
 
 struct tab;
 struct tabs;
