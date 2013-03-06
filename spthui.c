@@ -29,6 +29,7 @@
 #include "artistbrowse.h"
 #include "tabs.h"
 #include "image.h"
+#include "titles.h"
 
 enum spthui_state {
 	STATE_RUNNING,
@@ -609,7 +610,8 @@ static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userda
 	struct image_load_target *image_target;
 	int i;
 
-	printf("%s(): store=%p\n", __func__, browse->store);
+	fprintf(stderr, "%s(): result=%p browse->browse=%p\n",
+		__func__, sp_browse, browse->browse);
 
 	/* FIXME: this needs to release spthui_lock() and
 	 * take gdk lock and spthui_lock() again, as add_track() needs
@@ -675,10 +677,59 @@ static void expand_album(struct spthui *spthui, sp_album *album)
 static void expand_artistbrowse_complete(sp_artistbrowse *result, void *user_data)
 {
 	struct artistbrowse *browse = user_data;
+	GtkTreeIter iter;
+	sp_album *album;
+	struct item *item;
+	GtkListStore *store;
+	struct image_load_target *image_target;
+	int i;
 
-	fprintf(stderr, "%s(): not implemented. browse=%p\n", __func__, browse);
+	fprintf(stderr, "%s(): result=%p browse->browse=%p\n",
+		__func__, result, browse->browse);
 
-	sp_artistbrowse_release(result);
+	fprintf(stderr, "%s(): portraits: %d\n",
+		__func__, sp_artistbrowse_num_portraits(result));
+
+	if (browse->type == PORTRAIT) {
+		if (sp_artistbrowse_num_portraits(result) > 0) {
+			g_object_ref(browse->portrait);
+			image_target = malloc(sizeof(*image_target));
+			image_target->height = 0;
+			image_target->box = browse->portrait;
+			sp_image_add_load_callback(sp_image_create(browse->sp_session,
+								   sp_artistbrowse_portrait(result, 0)),
+						   image_load_to, image_target);
+		}
+
+	}
+
+	store = GTK_LIST_STORE(gtk_tree_view_get_model(browse->albums));
+	for (i = 0; i < sp_artistbrowse_num_albums(result); i++) {
+		album = sp_artistbrowse_album(result, i);
+		item = item_init_album(album, title_artist_album(album));
+		gtk_list_store_append(store, &iter);
+		gtk_list_store_set(store, &iter,
+				   COLUMN_OBJECT, item,
+				   COLUMN_NAME, item_name(item),
+				   -1);
+	}
+
+	if (browse->type == PORTRAIT) {
+		browse->type = ALBUMS;
+		browse->browse = sp_artistbrowse_create(browse->sp_session,
+							sp_artistbrowse_artist(result),
+							SP_ARTISTBROWSE_NO_TRACKS,
+							expand_artistbrowse_complete,
+							browse);
+		/* Release the old browse object */
+		sp_artistbrowse_release(result);
+	}
+
+	/* Ho hum. In the albumbrowse variant we can release the sp_*
+	 * object unconditionally, here it would just segfault. So we
+	 * only _release() the old one when we _create() a new one
+	 * (for the browse->type == ALBUMS) case.
+	 */
 }
 
 static inline GtkScrollable *make_scrollable(GtkWidget *child)
@@ -693,6 +744,7 @@ static inline GtkScrollable *make_scrollable(GtkWidget *child)
 static void expand_artist(struct spthui *spthui, sp_artist *artist)
 {
 	GtkBox *hbox, *vbox;
+	GtkScrollable *root;
 	struct artistbrowse *browse;
 	struct item *item;
 
@@ -716,10 +768,11 @@ static void expand_artist(struct spthui *spthui, sp_artist *artist)
 
 	browse = malloc(sizeof(*browse));
 	memset(browse, 0, sizeof(*browse));
+	browse->sp_session = spthui->sp_session;
 
 	/* The portrait + bio vbox */
 	hbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
-	browse->portrait = GTK_CONTAINER(gtk_frame_new((const gchar *)NULL));
+	browse->portrait = GTK_CONTAINER(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
 	browse->bio = GTK_CONTAINER(gtk_frame_new((const gchar *)NULL));
 	gtk_box_pack_start(hbox, GTK_WIDGET(browse->portrait), FALSE, FALSE, 0);
 	gtk_box_pack_start(hbox, GTK_WIDGET(browse->bio), TRUE, TRUE, 0);
@@ -731,14 +784,14 @@ static void expand_artist(struct spthui *spthui, sp_artist *artist)
 	gtk_box_pack_end(vbox, GTK_WIDGET(browse->albums), FALSE, FALSE, 0);
 
 	browse->browse = sp_artistbrowse_create(spthui->sp_session, artist,
-						SP_ARTISTBROWSE_NO_TRACKS,
+						SP_ARTISTBROWSE_NO_ALBUMS,
 						expand_artistbrowse_complete,
 						browse);
 
 	item = item_init_artistbrowse(browse, strdup(sp_artist_name(artist)));
-	tab_add_full(spthui->tabs,
-		     make_scrollable(GTK_WIDGET(vbox)), browse->albums,
-		     item_name(item), item);
+	root = make_scrollable(GTK_WIDGET(vbox));
+	gtk_widget_show_all(GTK_WIDGET(root));
+	tab_add_full(spthui->tabs, root, browse->albums, item_name(item), item);
 }
 
 

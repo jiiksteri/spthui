@@ -6,6 +6,11 @@
 
 struct artistbrowse {
 
+	enum {
+		PORTRAIT, ALBUMS,
+	} type;
+
+	sp_session *sp_session;
 	sp_artistbrowse *browse;
 
 	GtkContainer *portrait;
