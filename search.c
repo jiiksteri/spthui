@@ -85,7 +85,7 @@ static void image_loaded(sp_image *image, void *user_data)
 {
 	struct image_load_ctx *image_load_ctx = user_data;
 
-	image_load_ctx->pixbuf = image_load_pixbuf(image);
+	image_load_ctx->pixbuf = image_load_pixbuf(image, 16);
 	gdk_threads_add_idle(store_image_to_column, image_load_ctx);
 }
 

@@ -1,5 +1,6 @@
 
 #include "image.h"
+#include <stdlib.h>
 
 static GdkPixbuf *scale_to_height(GdkPixbuf *orig, int height)
 {
@@ -16,20 +17,23 @@ static GdkPixbuf *scale_to_height(GdkPixbuf *orig, int height)
 
 static GdkPixbuf *load_using(GdkPixbufLoader *loader,
 			     const void *buf, size_t sz,
+			     int height,
 			     GError **err)
 {
 	GdkPixbuf *pixbuf;
 
 	if (gdk_pixbuf_loader_write(loader, buf, sz, err)) {
-		/* FIXME: Figure out a sane size */
-		pixbuf = scale_to_height(gdk_pixbuf_loader_get_pixbuf(loader), 16);
+		pixbuf = gdk_pixbuf_loader_get_pixbuf(loader);
+		if (height > 0) {
+			pixbuf = scale_to_height(pixbuf, height);
+		}
 	} else {
 		pixbuf = NULL;
 	}
 	return pixbuf;
 }
 
-GdkPixbuf *image_load_pixbuf(sp_image *image)
+GdkPixbuf *image_load_pixbuf(sp_image *image, int height)
 {
 	GdkPixbuf *pixbuf = NULL;
 	GdkPixbufLoader *loader;
@@ -41,7 +45,7 @@ GdkPixbuf *image_load_pixbuf(sp_image *image)
 		buf = sp_image_data(image, &sz);
 		loader = gdk_pixbuf_loader_new_with_type("jpeg", &err);
 		if (loader != NULL) {
-			pixbuf = load_using(loader, buf, sz, &err);
+			pixbuf = load_using(loader, buf, sz, height, &err);
 			gdk_pixbuf_loader_close(loader, (GError **)NULL);
 		}
 	}
@@ -63,14 +67,14 @@ GdkPixbuf *image_load_pixbuf(sp_image *image)
  */
 void image_load_to(sp_image *image, void *container)
 {
-	GtkContainer *box = GTK_CONTAINER(container);
+	struct image_load_target *target = container;
 	GdkPixbuf *pixbuf = NULL;
 
 	if (sp_image_format(image) == SP_IMAGE_FORMAT_JPEG) {
-		pixbuf = image_load_pixbuf(image);
+		pixbuf = image_load_pixbuf(image, target->height);
 		if (pixbuf != NULL) {
-			gtk_container_add(box, GTK_WIDGET(gtk_image_new_from_pixbuf(pixbuf)));
-			gtk_widget_show_all(GTK_WIDGET(box));
+			gtk_container_add(target->box, GTK_WIDGET(gtk_image_new_from_pixbuf(pixbuf)));
+			gtk_widget_show_all(GTK_WIDGET(target->box));
 			g_object_unref(pixbuf);
 		}
 	} else {
@@ -79,6 +83,7 @@ void image_load_to(sp_image *image, void *container)
 	}
 
 	sp_image_release(image);
-	g_object_unref(box);
+	g_object_unref(target->box);
+	free(target);
 }
 

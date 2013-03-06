@@ -605,6 +605,7 @@ static char *name_with_index(sp_track *track)
 static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userdata)
 {
 	struct albumbrowse *browse = userdata;
+	struct image_load_target *image_target;
 	int i;
 
 	printf("%s(): store=%p\n", __func__, browse->store);
@@ -620,10 +621,14 @@ static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userda
 		add_track(browse->store, track, name_with_index(track));
 	}
 
+	image_target = malloc(sizeof(*image_target));
+	image_target->height = 16;
+	image_target->box = browse->image_container;
+
 	sp_image_add_load_callback(sp_image_create(browse->sp_session,
 						   sp_album_cover(sp_albumbrowse_album(sp_browse),
 								  SP_IMAGE_SIZE_SMALL)),
-				   image_load_to, browse->image_container);
+				   image_load_to, image_target);
 
 	sp_albumbrowse_release(sp_browse);
 }
