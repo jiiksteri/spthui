@@ -20,6 +20,9 @@ void tabs_destroy(struct tabs *tabs);
 
 GtkWidget *tabs_widget(struct tabs *tabs);
 
+struct tab *tab_add_full(struct tabs *tabs, GtkScrollable *root, GtkTreeView *view,
+			 const char *label_text, struct item *item);
+
 struct tab *tab_add(struct tabs *tabs, GtkTreeView *view,
 		    const char *label_text, struct item *item);
 
