@@ -78,6 +78,18 @@ struct item *item_init_album(sp_album *album, char *name)
 	return item_init_with_image(ITEM_ALBUM, album, name, cover);
 }
 
+struct item *item_init_artistbrowse(struct artistbrowse *browse, char *name)
+{
+	sp_artistbrowse_add_ref(browse->browse);
+	return item_init(ITEM_ARTISTBROWSE, browse, name);
+}
+
+static void artistbrowse_free(struct artistbrowse *browse)
+{
+	sp_artistbrowse_release(browse->browse);
+	free(browse);
+}
+
 struct item *item_init_albumbrowse(struct albumbrowse *browse, char *name)
 {
 	sp_albumbrowse_add_ref(browse->browse);
@@ -116,6 +128,9 @@ void item_free(struct item *item)
 		break;
 	case ITEM_ALBUMBROWSE:
 		albumbrowse_free(item->item);
+		break;
+	case ITEM_ARTISTBROWSE:
+		artistbrowse_free(item->item);
 		break;
 	case ITEM__COUNT:
 		assert(0 && "ITEM__COUNT is not really an item type");
