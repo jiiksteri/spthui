@@ -159,6 +159,7 @@ struct playback_panel *playback_panel_init(struct playback_panel_ops *ops,
 	g_object_ref_sink(panel->box);
 
 	panel->track_info = GTK_PROGRESS_BAR(gtk_progress_bar_new());
+	gtk_progress_bar_set_ellipsize(panel->track_info, PANGO_ELLIPSIZE_END);
 	g_object_set(panel->track_info, "show-text", TRUE, NULL);
 	gtk_progress_bar_set_text(panel->track_info, "Not playing");
 
