@@ -466,7 +466,7 @@ static sp_error spthui_player_load(struct spthui *spthui, sp_track *track)
 }
 
 /* Called with the GDK lock held. Will take spthui_lock(). */
-static void track_play(struct spthui *spthui, sp_track *track)
+static sp_error track_play(struct spthui *spthui, sp_track *track)
 {
 	sp_error err;
 
@@ -478,7 +478,7 @@ static void track_play(struct spthui *spthui, sp_track *track)
 			fprintf(stderr, "%s(): %s failed to load: %s\n",
 				__func__, sp_track_name(track), sp_error_message(err));
 			spthui_unlock(spthui);
-			return;
+			return err;
 		}
 	}
 
@@ -494,12 +494,14 @@ static void track_play(struct spthui *spthui, sp_track *track)
 	}
 
 	spthui_unlock(spthui);
+	return err;
 }
 
 
-static void play_current(struct spthui *spthui)
+static sp_error play_current(struct spthui *spthui)
 {
 	struct item *item;
+	sp_error err = SP_ERROR_OK;
 
 	if (view_get_selected(spthui->current_view, &item)) {
 		if (item_type(item) == ITEM_TRACK) {
@@ -507,16 +509,21 @@ static void play_current(struct spthui *spthui)
 		} else {
 			spthui->current_track = NULL;
 		}
-		track_play(spthui, spthui->current_track);
+		err = track_play(spthui, spthui->current_track);
 	}
+
+	return err;
 }
 
 
 static gboolean navigate_next_and_play(struct spthui *spthui)
 {
-	if (view_navigate_next(spthui->current_view)) {
-		play_current(spthui);
-	}
+	sp_error err;
+	do {
+		if (view_navigate_next(spthui->current_view)) {
+			err = play_current(spthui);
+		}
+	} while (err != SP_ERROR_OK);
 
 	return FALSE;
 }
