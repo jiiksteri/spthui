@@ -477,6 +477,7 @@ static void track_play(struct spthui *spthui, sp_track *track)
 		if (err != SP_ERROR_OK) {
 			fprintf(stderr, "%s(): %s failed to load: %s\n",
 				__func__, sp_track_name(track), sp_error_message(err));
+			spthui_unlock(spthui);
 			return;
 		}
 	}
