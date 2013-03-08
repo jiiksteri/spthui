@@ -682,6 +682,7 @@ static void expand_artistbrowse_complete(sp_artistbrowse *result, void *user_dat
 	struct item *item;
 	GtkListStore *store;
 	struct image_load_target *image_target;
+	const char *bio;
 	int i;
 
 	fprintf(stderr, "%s(): result=%p browse->browse=%p\n",
@@ -701,6 +702,13 @@ static void expand_artistbrowse_complete(sp_artistbrowse *result, void *user_dat
 						   image_load_to, image_target);
 		}
 
+		if ((bio = sp_artistbrowse_biography(browse->browse)) != NULL) {
+			GtkLabel *label = GTK_LABEL(gtk_label_new(bio));
+			gtk_label_set_line_wrap(label, TRUE);
+			gtk_label_set_line_wrap_mode(label, PANGO_WRAP_WORD);
+			gtk_container_add(browse->bio, GTK_WIDGET(label));
+			gtk_widget_show_all(GTK_WIDGET(browse->bio));
+		}
 	}
 
 	store = GTK_LIST_STORE(gtk_tree_view_get_model(browse->albums));
