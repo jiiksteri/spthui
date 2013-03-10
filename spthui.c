@@ -761,10 +761,13 @@ static void expand_artistbrowse_complete(sp_artistbrowse *result, void *user_dat
 		}
 
 		if ((bio = sp_artistbrowse_biography(browse->browse)) != NULL) {
+			GtkWidget *vp = gtk_viewport_new((GtkAdjustment *)NULL,
+							 (GtkAdjustment *)NULL);
 			GtkLabel *label = GTK_LABEL(gtk_label_new(bio));
 			gtk_label_set_line_wrap(label, TRUE);
 			gtk_label_set_line_wrap_mode(label, PANGO_WRAP_WORD);
-			gtk_container_add(browse->bio, GTK_WIDGET(label));
+			gtk_container_add(GTK_CONTAINER(vp), GTK_WIDGET(label));
+			gtk_container_add(browse->bio, vp);
 			gtk_widget_show_all(GTK_WIDGET(browse->bio));
 		}
 	}
@@ -839,7 +842,7 @@ static void expand_artist(struct spthui *spthui, sp_artist *artist)
 	/* The portrait + bio vbox */
 	hbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
 	browse->portrait = GTK_CONTAINER(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
-	browse->bio = GTK_CONTAINER(gtk_frame_new((const gchar *)NULL));
+	browse->bio = GTK_CONTAINER(gtk_scrolled_window_new((GtkAdjustment *)NULL, (GtkAdjustment *)NULL));
 	gtk_box_pack_start(hbox, GTK_WIDGET(browse->portrait), FALSE, FALSE, 0);
 	gtk_box_pack_start(hbox, GTK_WIDGET(browse->bio), TRUE, TRUE, 0);
 
