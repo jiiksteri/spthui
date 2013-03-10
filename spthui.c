@@ -535,6 +535,55 @@ static void end_of_track(sp_session *session)
 	gdk_threads_add_idle((GSourceFunc)navigate_next_and_play, spthui);
 }
 
+static void show_ok_dialog(GtkWindow *parent, const char *title, const char *message)
+{
+	GtkDialog *dlg;
+	GtkWidget *content;
+
+	dlg = GTK_DIALOG(gtk_dialog_new_with_buttons(title, parent,
+						     GTK_DIALOG_DESTROY_WITH_PARENT
+						     | GTK_DIALOG_MODAL,
+						     GTK_STOCK_OK, GTK_RESPONSE_OK,
+						     NULL));
+
+	content = gtk_dialog_get_content_area(dlg);
+	gtk_container_add(GTK_CONTAINER(content), gtk_label_new(message));
+	gtk_widget_show_all(content);
+
+	gtk_dialog_run(dlg);
+
+	gtk_widget_destroy(GTK_WIDGET(dlg));
+}
+
+static gboolean do_play_token_lost(struct spthui *spthui)
+{
+	spthui_lock(spthui);
+
+	spthui->playing = 0;
+	sp_session_player_play(spthui->sp_session, 0);
+	ui_update_playing(spthui);
+
+	show_ok_dialog(spthui->main_window, "Paused",
+		       "Your account is being used somewhere else");
+
+	spthui_unlock(spthui);
+
+	return FALSE;
+}
+
+static void play_token_lost(sp_session *session)
+{
+	struct spthui *spthui = sp_session_userdata(session);
+
+	/* We're always called by libspotify by (I'm assuming)
+	 * the process_events() thread. That means we hold sphtui_lock()
+	 * but since we poke the UI we need gdk lock, spthui_lock() in
+	 * that order. So just bounce it over to the gdk thread and
+	 * regrab spthui_lock() there.
+	 */
+	gdk_threads_add_idle((GSourceFunc)do_play_token_lost, spthui);
+}
+
 static sp_session_callbacks cb = {
 	.logged_in = logged_in,
 	.logged_out = logged_out,
@@ -545,6 +594,7 @@ static sp_session_callbacks cb = {
 	.stop_playback = stop_playback,
 	.get_audio_buffer_stats = get_audio_buffer_stats,
 	.end_of_track = end_of_track,
+	.play_token_lost = play_token_lost,
 };
 
 static char cache_location[512];
