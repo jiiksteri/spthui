@@ -108,12 +108,16 @@ static void add_item_playlist_expand(struct popup *popup, sp_playlist *pl,
 	add_item(popup, item_init_playlist(pl, strdup(name)), "Expand playlist");
 }
 
-static void setup_menu_for_item(struct popup *popup,
-				struct item *item)
+static int setup_menu_for_item(struct popup *popup,
+			       struct item *item)
 {
+	int num_options = 0;
+
 	switch (item_type(item)) {
 	case ITEM_NONE:
+		break;
 	case ITEM_SEARCH:
+		break;
 	case ITEM_ARTIST:
 		add_item_artist(popup, item_artist(item));
 		break;
@@ -123,26 +127,28 @@ static void setup_menu_for_item(struct popup *popup,
 	case ITEM_ALBUM:
 		add_item_album(popup, item_album(item));
 		add_item_artist(popup, sp_album_artist(item_album(item)));
+		num_options += 2;
 		break;
 
 	case ITEM_PLAYLIST:
 		add_item_playlist_expand(popup, item_playlist(item), item_name(item));
+		num_options++;
 		break;
 
 	case ITEM_ALBUMBROWSE:
-		gtk_menu_shell_append(GTK_MENU_SHELL(popup->menu),
-				      gtk_menu_item_new_with_label("I am out of options."
-								   " Why are we here?"));
 		break;
 	case ITEM_TRACK:
 		add_item_artist(popup,sp_track_artist(item_track(item), 0));
 		add_item_album(popup, sp_track_album(item_track(item)));
+		num_options += 2;
 		break;
 
 	case ITEM__COUNT:
 		g_assert(0 && "ITEM__COUNT is not really an item type");
 		break;
 	}
+
+	return num_options;
 }
 
 void popup_destroy(GtkMenuShell *menu, struct popup *popup)
@@ -185,7 +191,9 @@ void popup_show(struct item *item, const char *name,
 
 	gtk_menu_set_title(popup->menu, name);
 
-	setup_menu_for_item(popup, item);
+	if (setup_menu_for_item(popup, item) <= 0) {
+		return;
+	}
 
 	gtk_widget_show_all(GTK_WIDGET(popup->menu));
 
