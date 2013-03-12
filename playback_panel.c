@@ -291,7 +291,7 @@ void playback_panel_set_info(struct playback_panel *panel,
 		gtk_progress_bar_set_fraction(panel->track_info, 0.0);
 	}
 
-	gtk_progress_bar_set_text(panel->track_info, name);
+	gtk_progress_bar_set_text(panel->track_info, name != NULL ? name : "");
 	free(name);
 	gtk_button_set_label(panel->playback_toggle, stock);
 
