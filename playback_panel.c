@@ -309,3 +309,13 @@ void playback_panel_set_info(struct playback_panel *panel,
 	}
 
 }
+
+void playback_panel_reset_position(struct playback_panel *panel)
+{
+	if (panel->updater > 0) {
+		g_source_remove(panel->updater);
+		panel->updater = 0;
+	}
+
+	panel->position = 0;
+}

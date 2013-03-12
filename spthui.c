@@ -490,6 +490,7 @@ static sp_error track_play(struct spthui *spthui, sp_track *track)
 			sp_error_message(err));
 	} else {
 		spthui->playing = track != NULL;
+		playback_panel_reset_position(spthui->playback_panel);
 		ui_update_playing(spthui);
 	}
 

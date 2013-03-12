@@ -21,5 +21,7 @@ GtkWidget *playback_panel_widget(struct playback_panel *panel);
 void playback_panel_set_info(struct playback_panel *panel,
 			     sp_track *track, int playing);
 
+void playback_panel_reset_position(struct playback_panel *panel);
+
 
 #endif
