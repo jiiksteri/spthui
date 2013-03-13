@@ -831,10 +831,27 @@ static inline GtkScrollable *make_scrollable(GtkWidget *child)
 	return GTK_SCROLLABLE(viewport);
 }
 
+static GtkWidget *pad(GtkWidget *child, int howmuch)
+{
+	GtkAlignment *align;
+	guint top, bottom, left, right;
+
+	align = GTK_ALIGNMENT(gtk_alignment_new(0.5, 0.5, 1, 1));
+	gtk_container_add(GTK_CONTAINER(align), child);
+	gtk_alignment_get_padding(align, &top, &bottom, &left, &right);
+
+	gtk_alignment_set_padding(align,
+				  top + howmuch, bottom + howmuch,
+				  left + howmuch, right + howmuch);
+
+	return GTK_WIDGET(align);
+}
+
 /* Called with both GDK and spthui_lock() held. */
 static void expand_artist(struct spthui *spthui, sp_artist *artist)
 {
 	GtkBox *hbox, *vbox;
+	GtkWidget *frame;
 	GtkScrollable *root;
 	struct artistbrowse *browse;
 	struct item *item;
@@ -868,8 +885,11 @@ static void expand_artist(struct spthui *spthui, sp_artist *artist)
 	gtk_box_pack_start(hbox, GTK_WIDGET(browse->portrait), FALSE, FALSE, 0);
 	gtk_box_pack_start(hbox, GTK_WIDGET(browse->bio), TRUE, TRUE, 0);
 
+	frame = gtk_frame_new(sp_artist_name(artist));
+	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(hbox));
+
 	vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
-	gtk_box_pack_start(vbox, GTK_WIDGET(hbox), TRUE, TRUE, 0);
+	gtk_box_pack_start(vbox, pad(frame, 10), TRUE, TRUE, 0);
 
 	browse->albums = spthui_list_new(spthui);
 	gtk_box_pack_end(vbox, GTK_WIDGET(browse->albums), FALSE, FALSE, 0);
