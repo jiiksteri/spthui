@@ -1283,9 +1283,6 @@ int main(int argc, char **argv)
 	GtkBox *vbox;
 	int err;
 
-
-	gdk_threads_init();
-
 	gtk_init(&argc, &argv);
 
 	/* Force stock images for buttons where available */
@@ -1361,10 +1358,7 @@ int main(int argc, char **argv)
 
 	login_dialog_show(spthui.login_dialog);
 
-	gdk_threads_enter();
 	gtk_main();
-	gdk_threads_leave();
-
 
 	fprintf(stderr, "gtk_main() returned\n");
 
