@@ -1,0 +1,85 @@
+
+Spthui: a very very ugly libspotify player client example
+=========================================================
+
+...now backed up on the Internet. First of all:
+
+
+	This product uses Music by Spotify but is not endorsed,
+	certified or otherwise approved in any way by Spotify.
+	Spotify is the registered trade mark of the Spotify Group.
+
+
+Second of all, this is by no means an attempt to have a real usable
+client, but rather an experiment in using libspotify, the client
+library released by Spotify.
+
+
+Requirements
+=============
+
+  * libspotify (at least 12.1.51 "tested" to work)
+    https://developer.spotify.com/technologies/libspotify/
+
+  * alsa development packages
+
+  * gtk2 or gtk3 development packages
+  ** there's no autoprobing, so you'll need to decide which to use when
+     building
+
+
+If that didn't put you off yet, for running you'll need:
+
+   * A Spotify premium account
+
+   * A libspotify application key as a binary blob in $HOME/.spthui/key
+   ** which you need to request yourself, of course. Distributing a
+      readily readable key with open source software is probably not
+      smart. Or even allowed.
+
+
+Building
+=========
+
+To build with the GTK2 ui:
+
+  make clean all
+
+For GTK3 you'll need
+
+  make clean all UI=gtk3
+
+There's nothing autofiguring-out the GTK version to use. The makefile
+defaults to GTK2 for the simple reason of yours truly not having GTK3
+development libraries installed when this whole experiment in madness
+began. It _should_ work equally badly on both though.
+
+If the build falls apart you'll need to adjust the makefile. I am sorry.
+
+
+Running
+=======
+
+  ./spthui
+
+There's a lot of debugging output (both from libspotify and spthui) on
+the console, because this is not a real product.
+
+
+Spthui does not contain any playlist management functionality. It will
+show your existing playlists, which you can expand by double-clicking
+them. There's also a context menu on pretty much every list-type of
+thing.
+
+And there's a search field, not unlike the one on the real Spotify
+client. Try it. The results look horrible by design. There, I said
+'design'.
+
+Copyright
+=========
+
+Copyright (c) 2013 Jukka Ollila
+
+The code here is licensed under GPL v2. See the file COPYING for
+details.
+
