@@ -7,6 +7,12 @@
 
 #include "compat_gtk.h"
 
+#define BRANDING_TEXT \
+	"This product uses Music by Spotify but is not endorsed,\n"	\
+	"certified or otherwise approved in any way by Spotify.\n"	\
+	"\n"								\
+	"Spotify is the registered trade mark of the Spotify Group."
+
 struct login_dialog {
 	GtkWindow *login_dialog;
 
@@ -60,6 +66,21 @@ static GtkWidget *ui_align_right(GtkWidget *widget)
 	align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
 	gtk_container_add(GTK_CONTAINER(align), widget);
 	return align;
+}
+
+static GtkWidget *create_branding_panel()
+{
+	GtkLabel *text;
+	GtkAlignment *alignment;
+
+	text = GTK_LABEL(gtk_label_new(BRANDING_TEXT));
+	gtk_label_set_line_wrap(text, TRUE);
+
+	alignment = GTK_ALIGNMENT(gtk_alignment_new(1.0, 1.0, 0.8, 0.8));
+	gtk_alignment_set_padding(alignment, 30, 5, 10, 10);
+	gtk_container_add(GTK_CONTAINER(alignment), GTK_WIDGET(text));
+
+	return GTK_WIDGET(alignment);
 }
 
 struct login_dialog *login_dialog_init(login_dialog_login_cb login_cb,
@@ -139,6 +160,8 @@ struct login_dialog *login_dialog_init(login_dialog_login_cb login_cb,
 
 	vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
 	gtk_box_pack_start(vbox, GTK_WIDGET(hbox), TRUE, TRUE, 5);
+
+	gtk_box_pack_start(vbox, create_branding_panel(), TRUE, TRUE, 0);
 
 	dlg->error_label = GTK_LABEL(gtk_label_new(NULL));
 	gtk_label_set_attributes(dlg->error_label, dlg->error_attrs);
