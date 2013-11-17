@@ -12,6 +12,18 @@ LDFLAGS_gtk2 = $(LDFLAGS_gtk_common)
 CFLAGS_gtk3 = $(CFLAGS_gtk_common)
 LDFLAGS_gtk3 = $(LDFLAGS_gtk_common)
 
+OBJS += \
+	audio.o \
+	titles.o \
+	item.o \
+	view.o \
+	popup.o \
+	playback_panel.o \
+	login_dialog.o \
+	tabs.o \
+	search.o \
+	image.o \
+	spthui.o
 
 CFLAGS_gtk_common = \
 	-DGTK_DISABLE_DEPRECATED \
@@ -33,21 +45,12 @@ LDFLAGS := $(LDFLAGS) $(shell pkg-config --libs $(PKGCONFIG_packages)) \
 	-lpthread \
 	$(LDFLAGS_$(UI)) \
 
+
 .PHONY: clean all
 
 all: spthui
 
-spthui: audio.o \
-	titles.o \
-	item.o \
-	view.o \
-	popup.o \
-	playback_panel.o \
-	login_dialog.o \
-	tabs.o \
-	search.o \
-	image.o \
-	spthui.o
+spthui: $(OBJS)
 
 clean:
-	$(RM) spthui *.o
+	$(RM) spthui $(OBJS)
