@@ -13,5 +13,5 @@ ifeq ($(MPRIS),yes)
 	CFLAGS += -DMPRIS=$(MPRIS) $(shell pkg-config --cflags dbus-1)
 	LDFLAGS += $(shell pkg-config --libs dbus-1)
 	OBJS += $(TOP)/mpris.o $(TOP)/symbol.o $(TOP)/debug.o $(TOP)/symtab.o \
-		$(TOP)/introspect.o $(TOP)/connect.o
+		$(TOP)/introspect.o $(TOP)/connect.o $(TOP)/properties.o
 endif

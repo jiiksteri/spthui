@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "introspect.h"
+#include "properties.h"
 
 static const struct mpris_symbol syms[] = {
 
@@ -16,6 +17,24 @@ static const struct mpris_symbol syms[] = {
 		.iface = "org.freedesktop.DBus.Introspectable",
 		.member = "Introspect",
 		.eval = introspect_eval,
+	},
+
+	{
+		.iface = "org.freedesktop.DBus.Properties",
+		.member = "Get",
+		.eval = properties_get_eval,
+	},
+
+	{
+		.iface = "org.freedesktop.DBus.Properties",
+		.member = "GetAll",
+		.eval = properties_getall_eval,
+	},
+
+	{
+		.iface = "org.freedesktop.DBus.Properties",
+		.member = "Set",
+		.eval = properties_set_eval,
 	},
 
 	{ .iface = NULL, .member = NULL, .eval = NULL },
