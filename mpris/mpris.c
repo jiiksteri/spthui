@@ -9,6 +9,7 @@
 
 #include <dbus/dbus.h>
 
+#include "connect.h"
 #include "symtab.h"
 #include "debug.h"
 
@@ -124,7 +125,7 @@ static int mpris_remote_init(void **private_data,
 	mpris->cb_data = cb_data;
 
 	dbus_error_init(&err);
-	mpris->dbus = dbus_bus_get(DBUS_BUS_SESSION, &err);
+	mpris->dbus = mpris_dbus_connect(&err);
 	if (mpris->dbus == NULL) {
 		fprintf(stderr, "%s(): dbus_bus_get(DBUS_BUS_SESSION): %s (%s)\n",
 			__func__, err.name, err.message);
@@ -144,10 +145,8 @@ static void mpris_remote_destroy(void *private_data)
 {
 	struct mpris *mpris = private_data;
 
-	if (mpris->dbus) {
-		dbus_connection_unref(mpris->dbus);
-		mpris->dbus = NULL;
-	}
+	mpris_dbus_disconnect(mpris->dbus);
+	mpris->dbus = NULL;
 
 	free(mpris);
 }
