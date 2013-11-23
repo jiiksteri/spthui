@@ -1,6 +1,8 @@
 
 UI ?= gtk2
 
+include mpris/mpris.mk
+
 PKGCONFIG_packages = libspotify alsa $(PKGCONFIG_$(UI))
 
 PKGCONFIG_gtk2 = gtk+-2.0
@@ -23,6 +25,7 @@ OBJS += \
 	tabs.o \
 	search.o \
 	image.o \
+	remote.o \
 	spthui.o
 
 CFLAGS_gtk_common = \

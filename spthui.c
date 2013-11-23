@@ -30,6 +30,7 @@
 #include "tabs.h"
 #include "image.h"
 #include "titles.h"
+#include "remote.h"
 
 enum spthui_state {
 	STATE_RUNNING,
@@ -72,6 +73,8 @@ struct spthui {
 	struct audio *audio;
 
 	const char *login_error;
+
+	struct remote *remote;
 };
 
 #define spthui_lock(s) pthread_mutex_lock(&(s)->lock)
@@ -1275,6 +1278,11 @@ static void try_login_cb(const char *username, const char *password,
 	spthui_unlock(spthui);
 }
 
+/* callbacks for remote control */
+static const struct remote_callback_ops remote_callback_ops = {
+};
+
+
 int main(int argc, char **argv)
 {
 	sp_session_config config;
@@ -1358,9 +1366,13 @@ int main(int argc, char **argv)
 
 	login_dialog_show(spthui.login_dialog);
 
+	remote_init(&spthui.remote, &remote_callback_ops, &spthui);
+
 	gtk_main();
 
 	fprintf(stderr, "gtk_main() returned\n");
+
+	remote_destroy(spthui.remote);
 
 	err = join_worker(&spthui);
 
