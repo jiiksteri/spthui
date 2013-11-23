@@ -40,9 +40,9 @@ void *mpris_thread(void *_mpris)
 	return NULL;
 }
 
-static void eval(struct mpris *mpris, DBusMessage *msg)
+static DBusHandlerResult eval(struct mpris *mpris, DBusMessage *msg)
 {
-	int err;
+	DBusHandlerResult ret;
 	const struct mpris_symbol *sym;
 
 	const char *iface = dbus_message_get_interface(msg);
@@ -50,14 +50,15 @@ static void eval(struct mpris *mpris, DBusMessage *msg)
 
 	sym = mpris_symtab_lookup(mpris->symtab, iface, member);
 	if (sym != NULL) {
-		if ((err = mpris_symbol_eval(mpris->dbus, sym, msg, mpris->cb_ops, mpris->cb_data)) != 0) {
-			fprintf(stderr, "%s(): mpris_symbol_eval(%s.%s): %d (%s)\n",
-				__func__, iface, member, err, strerror(err));
-		}
+		mpris_symbol_eval(mpris->dbus, sym, msg, mpris->cb_ops, mpris->cb_data);
+		ret = DBUS_HANDLER_RESULT_HANDLED;
 	} else {
 		fprintf(stderr, "%s(): mpris_symtab_lookup(%s.%s): not found\n",
 			__func__, iface, member);
+		ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 	}
+
+	return ret;
 }
 
 
@@ -66,17 +67,20 @@ static DBusHandlerResult mpris_path_message(DBusConnection *dbus, DBusMessage *m
 					    void *_mpris)
 {
 	struct mpris *mpris = _mpris;
+	DBusHandlerResult ret;
+
+	mpris_debug_dump_message(msg);
 
 	switch (dbus_message_get_type(msg)) {
 	case DBUS_MESSAGE_TYPE_METHOD_CALL:
-		eval(mpris, msg);
+		ret = eval(mpris, msg);
 		break;
 	default:
-		mpris_debug_dump_message(msg);
+		ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 		break;
 	}
 	fprintf(stderr, "%s(): message %d done\n", __func__, dbus_message_get_serial(msg));
-	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+	return ret;
 }
 
 
