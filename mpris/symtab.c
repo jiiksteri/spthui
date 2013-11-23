@@ -8,7 +8,16 @@
 
 #include <stdio.h>
 
+#include "introspect.h"
+
 static const struct mpris_symbol syms[] = {
+
+	{
+		.iface = "org.freedesktop.DBus.Introspectable",
+		.member = "Introspect",
+		.eval = introspect_eval,
+	},
+
 	{ .iface = NULL, .member = NULL, .eval = NULL },
 };
 
