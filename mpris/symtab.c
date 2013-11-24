@@ -10,6 +10,7 @@
 
 #include "introspect.h"
 #include "properties.h"
+#include "mediaplayer2.h"
 
 static const struct mpris_symbol syms[] = {
 
@@ -35,6 +36,16 @@ static const struct mpris_symbol syms[] = {
 		.iface = "org.freedesktop.DBus.Properties",
 		.member = "Set",
 		.eval = properties_set_eval,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2",
+		.member = "Raise",
+		.eval = mediaplayer2_raise_eval,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2",
+		.member = "Quit",
+		.eval = mediaplayer2_quit_eval,
 	},
 
 	{ .iface = NULL, .member = NULL, .eval = NULL },
