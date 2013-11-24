@@ -18,6 +18,43 @@ static void property_get_string(DBusConnection *dbus, DBusMessage *msg,
 	dbus_message_unref(reply);
 }
 
+static void property_get_int(DBusConnection *dbus, DBusMessage *msg, dbus_int32_t i)
+{
+	DBusMessage *reply;
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply,
+				 DBUS_TYPE_INT32, &i,
+				 DBUS_TYPE_INVALID);
+	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
+	dbus_message_unref(reply);
+}
+
+static void property_get_double(DBusConnection *dbus, DBusMessage *msg, double d)
+{
+	DBusMessage *reply;
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply,
+				 DBUS_TYPE_DOUBLE, &d,
+				 DBUS_TYPE_INVALID);
+	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
+	dbus_message_unref(reply);
+}
+
+static void property_get_boolean(DBusConnection *dbus, DBusMessage *msg, int val)
+{
+	DBusMessage *reply;
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply,
+				 DBUS_TYPE_BOOLEAN, &val,
+				 DBUS_TYPE_INVALID);
+	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
+	dbus_message_unref(reply);
+}
+
+
 static void property_get_identity(DBusConnection *dbus, DBusMessage *msg,
 				  const struct remote_callback_ops *cb_ops,
 				  const void *cb_data)
@@ -37,15 +74,14 @@ static void property_get_boolean_false(DBusConnection *dbus, DBusMessage *msg,
 				       const struct remote_callback_ops *cb_ops,
 				       const void *cb_data)
 {
-	DBusMessage *reply;
-	int val = 0;
+	property_get_boolean(dbus, msg, 0);
+}
 
-	reply = dbus_message_new_method_return(msg);
-	dbus_message_append_args(reply,
-				 DBUS_TYPE_BOOLEAN, &val,
-				 DBUS_TYPE_INVALID);
-	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
-	dbus_message_unref(reply);
+static void property_get_boolean_true(DBusConnection *dbus, DBusMessage *msg,
+				      const struct remote_callback_ops *cb_ops,
+				      const void *cb_data)
+{
+	property_get_boolean(dbus, msg, 1);
 }
 
 static void property_get_supportedurischemes(DBusConnection *dbus, DBusMessage *msg,
@@ -90,6 +126,81 @@ static void property_get_empty_string_array(DBusConnection *dbus, DBusMessage *m
 	dbus_message_unref(reply);
 }
 
+static void property_get_playbackstatus(DBusConnection *dbus, DBusMessage *msg,
+					const struct remote_callback_ops *cb_ops,
+					const void *cb_data)
+{
+	DBusMessage *reply;
+	const char *status = "Stopped";
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply,
+				 DBUS_TYPE_STRING, &status,
+				 DBUS_TYPE_INVALID);
+	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
+	dbus_message_unref(reply);
+
+}
+
+static void property_get_rate(DBusConnection *dbus, DBusMessage *msg,
+			      const struct remote_callback_ops *cb_ops,
+			      const void *cb_data)
+{
+	property_get_int(dbus, msg, 0);
+}
+
+static void property_get_metadata(DBusConnection *dbus, DBusMessage *msg,
+				  const struct remote_callback_ops *cb_ops,
+				  const void *cb_data)
+{
+	DBusMessage *reply;
+	DBusMessageIter iter, sub;
+
+	reply = dbus_message_new_method_return(msg);
+
+	dbus_message_iter_init_append(msg, &iter);
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "{s,v}", &sub);
+	/* Contents would go here. */
+	dbus_message_iter_close_container(&iter, &sub);
+	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
+
+	dbus_message_unref(reply);
+
+}
+
+/*
+ * Note: the real spotify client seems to send these double values wrapped
+ * in variants, and DFeet shows the accordingly. It doesn't seem to deal
+ * well with these raw doubles.
+ */
+
+static void property_get_volume(DBusConnection *dbus, DBusMessage *msg,
+				const struct remote_callback_ops *cb_ops,
+				const void *cb_data)
+{
+	property_get_double(dbus, msg, 0.0);
+}
+
+static void property_get_position(DBusConnection *dbus, DBusMessage *msg,
+				  const struct remote_callback_ops *cb_ops,
+				  const void *cb_data)
+{
+	property_get_double(dbus, msg, 0.0);
+}
+
+static void property_get_minimumrate(DBusConnection *dbus, DBusMessage *msg,
+				     const struct remote_callback_ops *cb_ops,
+				     const void *cb_data)
+{
+	property_get_double(dbus, msg, 0.0);
+}
+
+static void property_get_maximumrate(DBusConnection *dbus, DBusMessage *msg,
+				     const struct remote_callback_ops *cb_ops,
+				     const void *cb_data)
+{
+	property_get_double(dbus, msg, 0.0);
+}
 
 static const struct property_handler {
 
@@ -156,6 +267,88 @@ static const struct property_handler {
 		.iface = "org.freedesktop.mpris.MediaPlayer2",
 		.property = "Identity",
 		.get = property_get_identity,
+		.set = property_set_noop,
+	},
+
+	/*
+	 * org.freedesktop.mpris.MediaPlayer2.Player
+	 */
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.property = "PlaybackStatus",
+		.get = property_get_playbackstatus,
+		.set = property_set_noop,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.property = "Rate",
+		.get = property_get_rate,
+		.set = property_set_noop,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.property = "MetaData",
+		.get = property_get_metadata,
+		.set = property_set_noop,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.property = "Volume",
+		.get = property_get_volume,
+		.set = property_set_noop,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.property = "Position",
+		.get = property_get_position,
+		.set = property_set_noop,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.property = "MinimumRate",
+		.get = property_get_minimumrate,
+		.set = property_set_noop,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.property = "MaximumRate",
+		.get = property_get_maximumrate,
+		.set = property_set_noop,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.property = "CanGoNext",
+		.get = property_get_boolean_true,
+		.set = property_set_noop,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.property = "CanGoPrevious",
+		.get = property_get_boolean_true,
+		.set = property_set_noop,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.property = "CanPlay",
+		.get = property_get_boolean_true,
+		.set = property_set_noop,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.property = "CanPause",
+		.get = property_get_boolean_true,
+		.set = property_set_noop,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.property = "CanSeek",
+		.get = property_get_boolean_true,
+		.set = property_set_noop,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.property = "CanSeek",
+		.get = property_get_boolean_true,
 		.set = property_set_noop,
 	},
 
