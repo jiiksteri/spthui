@@ -17,8 +17,9 @@ static void dump_generic(DBusMessage *msg)
 
 static void dump_method_call(DBusMessage *msg)
 {
-	fprintf(stderr, "%s(): %s.%s\n", __func__,
-		dbus_message_get_interface(msg), dbus_message_get_member(msg));
+	fprintf(stderr, "%s(): %s.%s response expected: %s\n", __func__,
+		dbus_message_get_interface(msg), dbus_message_get_member(msg),
+		dbus_message_get_no_reply(msg) ? "no" : "yes");
 }
 
 void mpris_debug_dump_message(DBusMessage *msg)
