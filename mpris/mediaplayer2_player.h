@@ -56,4 +56,13 @@ int mediaplayer2_player_playpause_eval(DBusConnection *dbus, DBusMessage *msg,
 				       const struct remote_callback_ops *cb_ops,
 				       const void *cb_data);
 
+int mediaplayer2_player_next_eval(DBusConnection *dbus, DBusMessage *msg,
+				  const struct remote_callback_ops *cb_ops,
+				  const void *cb_data);
+
+int mediaplayer2_player_previous_eval(DBusConnection *dbus, DBusMessage *msg,
+				      const struct remote_callback_ops *cb_ops,
+				      const void *cb_data);
+
+
 #endif

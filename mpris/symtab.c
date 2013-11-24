@@ -58,6 +58,17 @@ static const struct mpris_symbol syms[] = {
 		.member = "PlayPause",
 		.eval = mediaplayer2_player_playpause_eval,
 	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.member = "Next",
+		.eval = mediaplayer2_player_next_eval,
+	},
+	{
+		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.member = "Previous",
+		.eval = mediaplayer2_player_previous_eval,
+	},
+
 
 	{ .iface = NULL, .member = NULL, .eval = NULL },
 };

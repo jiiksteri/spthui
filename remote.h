@@ -9,6 +9,8 @@ struct remote_callback_ops {
 	/* To be filled */
 
 	int (*toggle_playback)(const void *cb_data);
+	int (*next)(const void *cb_data);
+	int (*previous)(const void *cb_data);
 };
 
 struct remote;

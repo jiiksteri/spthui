@@ -1284,6 +1284,20 @@ static gboolean playback_panel_synthesize_toggle_playback_trampoline(gpointer pa
 	return G_SOURCE_REMOVE;
 }
 
+static gboolean synthesize_next_trampoline(gpointer _spthui)
+{
+	struct spthui *spthui = _spthui;
+	next_clicked(spthui->playback_panel, spthui);
+	return G_SOURCE_REMOVE;
+}
+
+static gboolean synthesize_previous_trampoline(gpointer _spthui)
+{
+	struct spthui *spthui = _spthui;
+	prev_clicked(spthui->playback_panel, spthui);
+	return G_SOURCE_REMOVE;
+}
+
 static int spthui_toggle_playback_from_remote(const void *_spthui)
 {
 	const struct spthui *spthui = _spthui;
@@ -1291,9 +1305,23 @@ static int spthui_toggle_playback_from_remote(const void *_spthui)
 	return 0;
 }
 
+static int spthui_next_from_remote(const void *_spthui)
+{
+	g_idle_add(synthesize_next_trampoline, (gpointer)_spthui);
+	return 0;
+}
+
+static int spthui_previous_from_remote(const void *_spthui)
+{
+	g_idle_add(synthesize_previous_trampoline, (gpointer)_spthui);
+	return 0;
+}
+
 /* callbacks for remote control */
 static const struct remote_callback_ops remote_callback_ops = {
 	.toggle_playback = spthui_toggle_playback_from_remote,
+	.next = spthui_next_from_remote,
+	.previous = spthui_previous_from_remote,
 };
 
 
