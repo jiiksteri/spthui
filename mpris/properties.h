@@ -3,23 +3,29 @@
 
 #include "symbol.h"
 
+#include "introspect_xml.h"
+
 #define INTROSPECT_INTERFACE_FRAGMENT_PROPERTIES			\
-	"<interface name=\"org.freedesktop.DBus.Properties\">"		\
-	"  <method name=\"Get\">"					\
-	"    <arg direction=\"in\" name=\"interface_name\" type=\"s\" />" \
-	"    <arg direction=\"in\" name=\"property_name\" type=\"s\" />" \
-	"    <arg direction=\"out\" name=\"value\" type=\"v\" />"	\
-	"  </method>"							\
-	"  <method name=\"GetAll\">"					\
-	"    <arg direction=\"in\" name=\"interface_name\" type=\"s\" />" \
-	"    <arg direction=\"out\" name=\"props\" type=\"a{sv}\" />"	\
-	"  </method>"							\
-	"  <method name=\"Set\">"					\
-	"    <arg direction=\"in\" name=\"interface_name\" type=\"s\" />" \
-	"    <arg direction=\"in\" name=\"property_name\" type=\"s\"/>"	\
-	"    <arg direction=\"in\" name=\"value\" type=\"v\" />"	\
-	"  </method>"							\
-	"</interface>"
+	XML_IFACE_START(org.freedesktop.DBus.Properties)		\
+									\
+	XML_METHOD_START(Get)						\
+	XML_METHOD_ARG_STRING_IN(interface_name)			\
+	XML_METHOD_ARG_STRING_IN(property_name)				\
+	XML_METHOD_ARG_VARIANT_OUT(value)				\
+	XML_METHOD_END(Get)						\
+									\
+	XML_METHOD_START(GetAll)					\
+	XML_METHOD_ARG_STRING_IN(interface_name)			\
+	XML_METHOD_ARG_DICT_OUT(props)					\
+	XML_METHOD_END(GetAll)						\
+									\
+	XML_METHOD_START(Set)						\
+	XML_METHOD_ARG_STRING_IN(interface_name)			\
+	XML_METHOD_ARG_STRING_IN(property_name)				\
+	XML_METHOD_ARG_VARIANT_IN(value)				\
+	XML_METHOD_END(Set)						\
+									\
+	XML_IFACE_END(org.freedesktop.DBus.Properties)
 
 int properties_get_eval(DBusConnection *dbus, DBusMessage *msg,
 			const struct remote_callback_ops *cb_ops, const void *cb_data);
