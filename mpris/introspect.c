@@ -3,6 +3,7 @@
 
 #include "properties.h"
 #include "mediaplayer2.h"
+#include "mediaplayer2_player.h"
 
 static const char * const INTROSPECT_REPLY =
 	"<!DOCTYPE node PUBLIC \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\""
@@ -11,6 +12,7 @@ static const char * const INTROSPECT_REPLY =
 	INTROSPECT_INTERFACE_FRAGMENT_INTROSPECTABLE
 	INTROSPECT_INTERFACE_FRAGMENT_PROPERTIES
 	INTROSPECT_INTERFACE_FRAGMENT_MEDIAPLAYER2
+	INTROSPECT_INTERFACE_FRAGMENT_MEDIAPLAYER2_PLAYER
 	"  </node>"
 	;
 
