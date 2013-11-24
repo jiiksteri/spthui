@@ -7,7 +7,7 @@
 #include <dbus/dbus.h>
 
 #define INTROSPECT_INTERFACE_FRAGMENT_MEDIAPLAYER2			\
-	XML_IFACE_START(org.freedesktop.mpris.MediaPlayer2)		\
+	XML_IFACE_START(org.mpris.MediaPlayer2)		\
 									\
 	XML_PROP_BOOLEAN_RO(CanQuit)					\
 	XML_PROP_BOOLEAN_RW(FullScreen)					\
@@ -22,7 +22,7 @@
 	XML_VOID_METHOD(Raise)						\
 	XML_VOID_METHOD(Quit)						\
 									\
-	XML_IFACE_END(org.freedesktop.mpris.MediaPlayer2)
+	XML_IFACE_END(org.mpris.MediaPlayer2)
 
 
 int mediaplayer2_raise_eval(DBusConnection *dbus, DBusMessage *msg,

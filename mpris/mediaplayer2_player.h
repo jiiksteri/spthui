@@ -10,7 +10,7 @@
  */
 
 #define	INTROSPECT_INTERFACE_FRAGMENT_MEDIAPLAYER2_PLAYER		\
-	XML_IFACE_START(org.freedesktop.mpris.MediaPlayer2.Player)	\
+	XML_IFACE_START(org.mpris.MediaPlayer2.Player)	\
 									\
 	XML_PROP_STRING_RO(PlaybackStatus)				\
 	XML_PROP_DOUBLE_RW(Rate)					\
@@ -49,7 +49,7 @@
 	XML_SIGNAL_ARG_INT64(Position)					\
 	XML_SIGNAL_END(Seeked)						\
 									\
-	XML_IFACE_END(org.freedesktop.mpris.MediaPlayer2.Player)
+	XML_IFACE_END(org.mpris.MediaPlayer2.Player)
 
 
 int mediaplayer2_player_playpause_eval(DBusConnection *dbus, DBusMessage *msg,

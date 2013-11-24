@@ -39,32 +39,32 @@ static const struct mpris_symbol syms[] = {
 		.eval = properties_set_eval,
 	},
 	{
-		.iface = "org.freedesktop.mpris.MediaPlayer2",
+		.iface = "org.mpris.MediaPlayer2",
 		.member = "Raise",
 		.eval = mediaplayer2_raise_eval,
 	},
 	{
-		.iface = "org.freedesktop.mpris.MediaPlayer2",
+		.iface = "org.mpris.MediaPlayer2",
 		.member = "Quit",
 		.eval = mediaplayer2_quit_eval,
 	},
 
 	/*
-	 * org.freedesktop.mpris.MediaPlayer2.Player
+	 * org.mpris.MediaPlayer2.Player
 	 */
 
 	{
-		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.iface = "org.mpris.MediaPlayer2.Player",
 		.member = "PlayPause",
 		.eval = mediaplayer2_player_playpause_eval,
 	},
 	{
-		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.iface = "org.mpris.MediaPlayer2.Player",
 		.member = "Next",
 		.eval = mediaplayer2_player_next_eval,
 	},
 	{
-		.iface = "org.freedesktop.mpris.MediaPlayer2.Player",
+		.iface = "org.mpris.MediaPlayer2.Player",
 		.member = "Previous",
 		.eval = mediaplayer2_player_previous_eval,
 	},
