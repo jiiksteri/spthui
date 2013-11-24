@@ -17,7 +17,10 @@ static void dump_generic(DBusMessage *msg)
 
 static void dump_method_call(DBusMessage *msg)
 {
-	fprintf(stderr, "%s(): %s.%s response expected: %s\n", __func__,
+	fprintf(stderr, "%s(): [%u] %s -> %s %s.%s response expected: %s\n", __func__,
+		dbus_message_get_serial(msg),
+		dbus_message_get_sender(msg),
+		dbus_message_get_destination(msg),
 		dbus_message_get_interface(msg), dbus_message_get_member(msg),
 		dbus_message_get_no_reply(msg) ? "no" : "yes");
 }

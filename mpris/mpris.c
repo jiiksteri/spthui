@@ -80,7 +80,6 @@ static DBusHandlerResult mpris_path_message(DBusConnection *dbus, DBusMessage *m
 		ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 		break;
 	}
-	fprintf(stderr, "%s(): message %d done\n", __func__, dbus_message_get_serial(msg));
 	return ret;
 }
 
