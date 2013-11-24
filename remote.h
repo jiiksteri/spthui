@@ -7,6 +7,8 @@
  */
 struct remote_callback_ops {
 	/* To be filled */
+
+	int (*toggle_playback)(const void *cb_data);
 };
 
 struct remote;

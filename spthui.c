@@ -1278,8 +1278,22 @@ static void try_login_cb(const char *username, const char *password,
 	spthui_unlock(spthui);
 }
 
+static gboolean playback_panel_synthesize_toggle_playback_trampoline(gpointer panel)
+{
+	playback_panel_synthesize_toggle_playback(panel);
+	return G_SOURCE_REMOVE;
+}
+
+static int spthui_toggle_playback_from_remote(const void *_spthui)
+{
+	const struct spthui *spthui = _spthui;
+	g_idle_add(playback_panel_synthesize_toggle_playback_trampoline, spthui->playback_panel);
+	return 0;
+}
+
 /* callbacks for remote control */
 static const struct remote_callback_ops remote_callback_ops = {
+	.toggle_playback = spthui_toggle_playback_from_remote,
 };
 
 

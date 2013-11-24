@@ -14,5 +14,5 @@ ifeq ($(MPRIS),yes)
 	LDFLAGS += $(shell pkg-config --libs dbus-1)
 	OBJS += $(TOP)/mpris.o $(TOP)/symbol.o $(TOP)/debug.o $(TOP)/symtab.o \
 		$(TOP)/introspect.o $(TOP)/connect.o $(TOP)/properties.o \
-		$(TOP)/message.o $(TOP)/mediaplayer2.o
+		$(TOP)/message.o $(TOP)/mediaplayer2.o $(TOP)/mediaplayer2_player.o
 endif

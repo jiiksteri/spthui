@@ -319,3 +319,10 @@ void playback_panel_reset_position(struct playback_panel *panel)
 
 	panel->position = 0;
 }
+
+
+int playback_panel_synthesize_toggle_playback(struct playback_panel *panel)
+{
+	gtk_widget_activate(GTK_WIDGET(panel->playback_toggle));
+	return 0;
+}

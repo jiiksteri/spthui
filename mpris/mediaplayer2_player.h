@@ -2,6 +2,8 @@
 #define MPRIS_MEDIAPLAYER2_PLAYER_H__INCLUDED
 
 #include "introspect_xml.h"
+#include "../remote.h"
+#include <dbus/dbus.h>
 
 /*
  * Note: the LoopStatus and Shuffle properties are not implemented
@@ -48,5 +50,10 @@
 	XML_SIGNAL_END(Seeked)						\
 									\
 	XML_IFACE_END(org.freedesktop.mpris.MediaPlayer2.Player)
+
+
+int mediaplayer2_player_playpause_eval(DBusConnection *dbus, DBusMessage *msg,
+				       const struct remote_callback_ops *cb_ops,
+				       const void *cb_data);
 
 #endif

@@ -23,5 +23,6 @@ void playback_panel_set_info(struct playback_panel *panel,
 
 void playback_panel_reset_position(struct playback_panel *panel);
 
+int playback_panel_synthesize_toggle_playback(struct playback_panel *panel);
 
 #endif
