@@ -5,99 +5,74 @@
 #include <stdio.h>
 #include <string.h>
 
-static void property_get_string(DBusConnection *dbus, DBusMessage *msg,
-				const char *s)
+static void property_get_string(DBusMessage *reply, const char *s)
 {
-	DBusMessage *reply;
-
-	reply = dbus_message_new_method_return(msg);
 	dbus_message_append_args(reply,
 				 DBUS_TYPE_STRING, &s,
 				 DBUS_TYPE_INVALID);
-	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
-	dbus_message_unref(reply);
 }
 
-static void property_get_int(DBusConnection *dbus, DBusMessage *msg, dbus_int32_t i)
+static void property_get_int(DBusMessage *reply, dbus_int32_t i)
 {
-	DBusMessage *reply;
-
-	reply = dbus_message_new_method_return(msg);
 	dbus_message_append_args(reply,
 				 DBUS_TYPE_INT32, &i,
 				 DBUS_TYPE_INVALID);
-	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
-	dbus_message_unref(reply);
 }
 
-static void property_get_double(DBusConnection *dbus, DBusMessage *msg, double d)
+static void property_get_double(DBusMessage *reply, double d)
 {
-	DBusMessage *reply;
-
-	reply = dbus_message_new_method_return(msg);
 	dbus_message_append_args(reply,
 				 DBUS_TYPE_DOUBLE, &d,
 				 DBUS_TYPE_INVALID);
-	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
-	dbus_message_unref(reply);
 }
 
-static void property_get_boolean(DBusConnection *dbus, DBusMessage *msg, int val)
+static void property_get_boolean(DBusMessage *reply, int val)
 {
-	DBusMessage *reply;
-
-	reply = dbus_message_new_method_return(msg);
 	dbus_message_append_args(reply,
 				 DBUS_TYPE_BOOLEAN, &val,
 				 DBUS_TYPE_INVALID);
-	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
-	dbus_message_unref(reply);
 }
 
 
-static void property_get_identity(DBusConnection *dbus, DBusMessage *msg,
+static void property_get_identity(DBusMessage *reply,
 				  const struct remote_callback_ops *cb_ops,
 				  const void *cb_data)
 {
-	property_get_string(dbus, msg, "spthui");
+	property_get_string(reply, "spthui");
 }
 
 
-static void property_get_desktopentry(DBusConnection *dbus, DBusMessage *msg,
+static void property_get_desktopentry(DBusMessage *reply,
 				      const struct remote_callback_ops *cb_ops,
 				      const void *cb_data)
 {
-	property_get_string(dbus, msg, "Spthui");
+	property_get_string(reply, "Spthui");
 }
 
-static void property_get_boolean_false(DBusConnection *dbus, DBusMessage *msg,
+static void property_get_boolean_false(DBusMessage *reply,
 				       const struct remote_callback_ops *cb_ops,
 				       const void *cb_data)
 {
-	property_get_boolean(dbus, msg, 0);
+	property_get_boolean(reply, 0);
 }
 
-static void property_get_boolean_true(DBusConnection *dbus, DBusMessage *msg,
+static void property_get_boolean_true(DBusMessage *reply,
 				      const struct remote_callback_ops *cb_ops,
 				      const void *cb_data)
 {
-	property_get_boolean(dbus, msg, 1);
+	property_get_boolean(reply, 1);
 }
 
-static void property_get_supportedurischemes(DBusConnection *dbus, DBusMessage *msg,
+static void property_get_supportedurischemes(DBusMessage *reply,
 					     const struct remote_callback_ops *cb_ops,
 					     const void *cb_data)
 {
-	DBusMessage *reply;
 	char *schemes[] = { "spthui" };
 	char **schemesp = schemes;
 
-	reply = dbus_message_new_method_return(msg);
 	dbus_message_append_args(reply,
 				 DBUS_TYPE_ARRAY, DBUS_TYPE_STRING, &schemesp, 1,
 				 DBUS_TYPE_INVALID);
-	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
-	dbus_message_unref(reply);
 }
 
 static void property_set_noop(DBusConnection *dbus, DBusMessage *msg,
@@ -111,61 +86,45 @@ static void property_set_noop(DBusConnection *dbus, DBusMessage *msg,
 	dbus_message_unref(reply);
 }
 
-static void property_get_empty_string_array(DBusConnection *dbus, DBusMessage *msg,
+static void property_get_empty_string_array(DBusMessage *reply,
 					    const struct remote_callback_ops *cb_ops,
 					    const void *cb_data)
 {
-	DBusMessage *reply;
 	char *empty = "";
 
-	reply = dbus_message_new_method_return(msg);
 	dbus_message_append_args(reply,
 				 DBUS_TYPE_ARRAY, DBUS_TYPE_STRING, &empty, 0,
 				 DBUS_TYPE_INVALID);
-	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
-	dbus_message_unref(reply);
 }
 
-static void property_get_playbackstatus(DBusConnection *dbus, DBusMessage *msg,
+static void property_get_playbackstatus(DBusMessage *reply,
 					const struct remote_callback_ops *cb_ops,
 					const void *cb_data)
 {
-	DBusMessage *reply;
 	const char *status = "Stopped";
 
-	reply = dbus_message_new_method_return(msg);
 	dbus_message_append_args(reply,
 				 DBUS_TYPE_STRING, &status,
 				 DBUS_TYPE_INVALID);
-	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
-	dbus_message_unref(reply);
-
 }
 
-static void property_get_rate(DBusConnection *dbus, DBusMessage *msg,
+static void property_get_rate(DBusMessage *reply,
 			      const struct remote_callback_ops *cb_ops,
 			      const void *cb_data)
 {
-	property_get_int(dbus, msg, 0);
+	property_get_int(reply, 0);
 }
 
-static void property_get_metadata(DBusConnection *dbus, DBusMessage *msg,
+static void property_get_metadata(DBusMessage *reply,
 				  const struct remote_callback_ops *cb_ops,
 				  const void *cb_data)
 {
-	DBusMessage *reply;
 	DBusMessageIter iter, sub;
 
-	reply = dbus_message_new_method_return(msg);
-
-	dbus_message_iter_init_append(msg, &iter);
+	dbus_message_iter_init_append(reply, &iter);
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "{s,v}", &sub);
 	/* Contents would go here. */
 	dbus_message_iter_close_container(&iter, &sub);
-	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
-
-	dbus_message_unref(reply);
-
 }
 
 /*
@@ -174,32 +133,32 @@ static void property_get_metadata(DBusConnection *dbus, DBusMessage *msg,
  * well with these raw doubles.
  */
 
-static void property_get_volume(DBusConnection *dbus, DBusMessage *msg,
+static void property_get_volume(DBusMessage *reply,
 				const struct remote_callback_ops *cb_ops,
 				const void *cb_data)
 {
-	property_get_double(dbus, msg, 0.0);
+	property_get_double(reply, 0.0);
 }
 
-static void property_get_position(DBusConnection *dbus, DBusMessage *msg,
+static void property_get_position(DBusMessage *reply,
 				  const struct remote_callback_ops *cb_ops,
 				  const void *cb_data)
 {
-	property_get_double(dbus, msg, 0.0);
+	property_get_double(reply, 0.0);
 }
 
-static void property_get_minimumrate(DBusConnection *dbus, DBusMessage *msg,
+static void property_get_minimumrate(DBusMessage *reply,
 				     const struct remote_callback_ops *cb_ops,
 				     const void *cb_data)
 {
-	property_get_double(dbus, msg, 0.0);
+	property_get_double(reply, 0.0);
 }
 
-static void property_get_maximumrate(DBusConnection *dbus, DBusMessage *msg,
+static void property_get_maximumrate(DBusMessage *reply,
 				     const struct remote_callback_ops *cb_ops,
 				     const void *cb_data)
 {
-	property_get_double(dbus, msg, 0.0);
+	property_get_double(reply, 0.0);
 }
 
 static const struct property_handler {
@@ -207,7 +166,10 @@ static const struct property_handler {
 	const char *iface;
 	const char *property;
 
-	void (*get)(DBusConnection *dbus, DBusMessage *msg,
+	/**
+	 * Gets the value and appends it in @reply
+	 */
+	void (*get)(DBusMessage *reply,
 		    const struct remote_callback_ops *cb_ops, const void *cb_data);
 
 	void (*set)(DBusConnection *dbus, DBusMessage *msg,
@@ -356,15 +318,6 @@ static const struct property_handler {
 
 };
 
-static void send_no_value(DBusConnection *dbus, DBusMessage *msg)
-{
-	DBusMessage *reply;
-
-	reply = dbus_message_new_method_return(msg);
-	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
-	dbus_message_unref(reply);
-}
-
 static int match(const struct property_handler *handler, const char *iface, const char *property)
 {
 	return
@@ -394,21 +347,24 @@ int properties_get_eval(DBusConnection *dbus, DBusMessage *msg,
 	const char *property_iface;
 	const char *property_name;
 	const struct property_handler *handler;
+	DBusMessage *reply;
 
 	dbus_message_get_args(msg, (DBusError *)NULL,
 			      DBUS_TYPE_STRING, &property_iface,
 			      DBUS_TYPE_STRING, &property_name,
 			      DBUS_TYPE_INVALID);
 
+	reply = dbus_message_new_method_return(msg);
 	if ((handler = lookup_handler(property_iface, property_name)) != NULL) {
-		handler->get(dbus, msg, cb_ops, cb_data);
+		handler->get(reply, cb_ops, cb_data);
 	} else {
 		fprintf(stderr,
 			"%s(): no property handler for (%s.%s)\n",
 			__func__, property_iface, property_name);
 
-		send_no_value(dbus, msg);
 	}
+	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
+	dbus_message_unref(reply);
 
 	return 0;
 }
