@@ -34,44 +34,14 @@ static void property_get_boolean(DBusMessage *reply, int val)
 }
 
 
-static void property_get_identity(DBusMessage *reply,
-				  const struct remote_callback_ops *cb_ops,
-				  const void *cb_data)
+static void property_get_empty_string_array(DBusMessage *reply,
+					    const struct remote_callback_ops *cb_ops,
+					    const void *cb_data)
 {
-	property_get_string(reply, "spthui");
-}
-
-
-static void property_get_desktopentry(DBusMessage *reply,
-				      const struct remote_callback_ops *cb_ops,
-				      const void *cb_data)
-{
-	property_get_string(reply, "Spthui");
-}
-
-static void property_get_boolean_false(DBusMessage *reply,
-				       const struct remote_callback_ops *cb_ops,
-				       const void *cb_data)
-{
-	property_get_boolean(reply, 0);
-}
-
-static void property_get_boolean_true(DBusMessage *reply,
-				      const struct remote_callback_ops *cb_ops,
-				      const void *cb_data)
-{
-	property_get_boolean(reply, 1);
-}
-
-static void property_get_supportedurischemes(DBusMessage *reply,
-					     const struct remote_callback_ops *cb_ops,
-					     const void *cb_data)
-{
-	char *schemes[] = { "spthui" };
-	char **schemesp = schemes;
+	char *empty = "";
 
 	dbus_message_append_args(reply,
-				 DBUS_TYPE_ARRAY, DBUS_TYPE_STRING, &schemesp, 1,
+				 DBUS_TYPE_ARRAY, DBUS_TYPE_STRING, &empty, 0,
 				 DBUS_TYPE_INVALID);
 }
 
@@ -86,18 +56,76 @@ static void property_set_noop(DBusConnection *dbus, DBusMessage *msg,
 	dbus_message_unref(reply);
 }
 
-static void property_get_empty_string_array(DBusMessage *reply,
+static void property_get_SupportedMimeTypes(DBusMessage *reply,
 					    const struct remote_callback_ops *cb_ops,
 					    const void *cb_data)
 {
-	char *empty = "";
+	property_get_empty_string_array(reply, cb_ops, cb_data);
+}
+
+static void property_get_SupportedUriSchemes(DBusMessage *reply,
+					     const struct remote_callback_ops *cb_ops,
+					     const void *cb_data)
+{
+	char *schemes[] = { "spthui" };
+	char **schemesp = schemes;
 
 	dbus_message_append_args(reply,
-				 DBUS_TYPE_ARRAY, DBUS_TYPE_STRING, &empty, 0,
+				 DBUS_TYPE_ARRAY, DBUS_TYPE_STRING, &schemesp, 1,
 				 DBUS_TYPE_INVALID);
 }
 
-static void property_get_playbackstatus(DBusMessage *reply,
+static void property_get_CanRaise(DBusMessage *reply,
+				  const struct remote_callback_ops *cb_ops,
+				  const void *cb_data)
+{
+	property_get_boolean(reply, 0);
+}
+
+static void property_get_CanQuit(DBusMessage *reply,
+				 const struct remote_callback_ops *cb_ops,
+				 const void *cb_data)
+{
+	property_get_boolean(reply, 0);
+}
+
+static void property_get_CanSetFullScreen(DBusMessage *reply,
+					  const struct remote_callback_ops *cb_ops,
+					  const void *cb_data)
+{
+	property_get_boolean(reply, 0);
+}
+
+static void property_get_FullScreen(DBusMessage *reply,
+				    const struct remote_callback_ops *cb_ops,
+				    const void *cb_data)
+{
+	property_get_boolean(reply, 0);
+}
+
+static void property_get_HasTrackList(DBusMessage *reply,
+				      const struct remote_callback_ops *cb_ops,
+				      const void *cb_data)
+{
+	property_get_boolean(reply, 0);
+}
+
+static void property_get_DesktopEntry(DBusMessage *reply,
+				      const struct remote_callback_ops *cb_ops,
+				      const void *cb_data)
+{
+	property_get_string(reply, "Spthui");
+}
+
+static void property_get_Identity(DBusMessage *reply,
+				  const struct remote_callback_ops *cb_ops,
+				  const void *cb_data)
+{
+	property_get_string(reply, "spthui");
+}
+
+
+static void property_get_PlaybackStatus(DBusMessage *reply,
 					const struct remote_callback_ops *cb_ops,
 					const void *cb_data)
 {
@@ -108,14 +136,14 @@ static void property_get_playbackstatus(DBusMessage *reply,
 				 DBUS_TYPE_INVALID);
 }
 
-static void property_get_rate(DBusMessage *reply,
+static void property_get_Rate(DBusMessage *reply,
 			      const struct remote_callback_ops *cb_ops,
 			      const void *cb_data)
 {
 	property_get_int(reply, 0);
 }
 
-static void property_get_metadata(DBusMessage *reply,
+static void property_get_MetaData(DBusMessage *reply,
 				  const struct remote_callback_ops *cb_ops,
 				  const void *cb_data)
 {
@@ -133,38 +161,95 @@ static void property_get_metadata(DBusMessage *reply,
  * well with these raw doubles.
  */
 
-static void property_get_volume(DBusMessage *reply,
+static void property_get_Volume(DBusMessage *reply,
 				const struct remote_callback_ops *cb_ops,
 				const void *cb_data)
 {
 	property_get_double(reply, 0.0);
 }
 
-static void property_get_position(DBusMessage *reply,
+static void property_get_Position(DBusMessage *reply,
 				  const struct remote_callback_ops *cb_ops,
 				  const void *cb_data)
 {
 	property_get_double(reply, 0.0);
 }
 
-static void property_get_minimumrate(DBusMessage *reply,
+static void property_get_MinimumRate(DBusMessage *reply,
 				     const struct remote_callback_ops *cb_ops,
 				     const void *cb_data)
 {
 	property_get_double(reply, 0.0);
 }
 
-static void property_get_maximumrate(DBusMessage *reply,
+static void property_get_MaximumRate(DBusMessage *reply,
 				     const struct remote_callback_ops *cb_ops,
 				     const void *cb_data)
 {
 	property_get_double(reply, 0.0);
 }
+
+static void property_get_CanGoNext(DBusMessage *reply,
+				   const struct remote_callback_ops *cb_ops,
+				   const void *cb_data)
+{
+	property_get_boolean(reply, 1);
+}
+
+static void property_get_CanGoPrevious(DBusMessage *reply,
+				       const struct remote_callback_ops *cb_ops,
+				       const void *cb_data)
+{
+	property_get_boolean(reply, 1);
+}
+
+static void property_get_CanPlay(DBusMessage *reply,
+				 const struct remote_callback_ops *cb_ops,
+				 const void *cb_data)
+{
+	property_get_boolean(reply, 1);
+}
+
+static void property_get_CanPause(DBusMessage *reply,
+				  const struct remote_callback_ops *cb_ops,
+				  const void *cb_data)
+{
+	property_get_boolean(reply, 1);
+}
+
+static void property_get_CanSeek(DBusMessage *reply,
+				 const struct remote_callback_ops *cb_ops,
+				 const void *cb_data)
+{
+	property_get_boolean(reply, 1);
+}
+
+
+
+
+#define PROPERTY_HANDLER_RO(_if,_prop,_vsig)	\
+	{					\
+		.iface = #_if,			\
+		.property = #_prop,		\
+		.value_signature = _vsig,	\
+		.get = property_get_##_prop,	\
+		.set = property_set_noop,	\
+	}					\
+
+#define PROPERTY_HANDLER_RW(_if,_prop,_vsig)	\
+	{					\
+		.iface = #_if,			\
+		.property = #_prop,		\
+		.get = property_get_##_prop,	\
+		.set = property_set_##_prop,	\
+	}					\
+
 
 static const struct property_handler {
 
 	const char *iface;
 	const char *property;
+	const char *value_signature;
 
 	/**
 	 * Gets the value and appends it in @reply
@@ -177,142 +262,32 @@ static const struct property_handler {
 
 } property_handlers[] = {
 
-	{
-		.iface = "org.mpris.MediaPlayer2",
-		.property = "SupportedMimeTypes",
-		.get = property_get_empty_string_array,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2",
-		.property = "SupportedUriSchemes",
-		.get = property_get_supportedurischemes,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2",
-		.property = "CanQuit",
-		.get = property_get_boolean_false,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2",
-		.property = "CanRaise",
-		.get = property_get_boolean_false,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2",
-		.property = "CanSetFullScreen",
-		.get = property_get_boolean_false,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2",
-		.property = "FullScreen",
-		.get = property_get_boolean_false,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2",
-		.property = "HasTrackList",
-		.get = property_get_boolean_false,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2",
-		.property = "DesktopEntry",
-		.get = property_get_desktopentry,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2",
-		.property = "Identity",
-		.get = property_get_identity,
-		.set = property_set_noop,
-	},
+	/* FIXME: Not all of these are really *_RO() */
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2, SupportedMimeTypes, "as"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2, SupportedUriSchemes, "as"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2, CanQuit, "b"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2, CanRaise, "b"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2, CanSetFullScreen, "b"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2, FullScreen, "b"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2, HasTrackList, "b"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2, DesktopEntry, "s"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2, Identity, "s"),
 
 	/*
 	 * org.mpris.MediaPlayer2.Player
 	 */
-	{
-		.iface = "org.mpris.MediaPlayer2.Player",
-		.property = "PlaybackStatus",
-		.get = property_get_playbackstatus,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2.Player",
-		.property = "Rate",
-		.get = property_get_rate,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2.Player",
-		.property = "MetaData",
-		.get = property_get_metadata,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2.Player",
-		.property = "Volume",
-		.get = property_get_volume,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2.Player",
-		.property = "Position",
-		.get = property_get_position,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2.Player",
-		.property = "MinimumRate",
-		.get = property_get_minimumrate,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2.Player",
-		.property = "MaximumRate",
-		.get = property_get_maximumrate,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2.Player",
-		.property = "CanGoNext",
-		.get = property_get_boolean_true,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2.Player",
-		.property = "CanGoPrevious",
-		.get = property_get_boolean_true,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2.Player",
-		.property = "CanPlay",
-		.get = property_get_boolean_true,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2.Player",
-		.property = "CanPause",
-		.get = property_get_boolean_true,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2.Player",
-		.property = "CanSeek",
-		.get = property_get_boolean_true,
-		.set = property_set_noop,
-	},
-	{
-		.iface = "org.mpris.MediaPlayer2.Player",
-		.property = "CanSeek",
-		.get = property_get_boolean_true,
-		.set = property_set_noop,
-	},
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2.Player, PlaybackStatus, "s"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2.Player, Rate, "d"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2.Player, MetaData, "a{sv}"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2.Player, Volume, "d"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2.Player, Position, "x"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2.Player, MinimumRate, "d"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2.Player, MaximumRate, "d"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2.Player, CanGoNext, "b"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2.Player, CanGoPrevious, "b"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2.Player, CanPlay, "b"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2.Player, CanPause, "b"),
+	PROPERTY_HANDLER_RO(org.mpris.MediaPlayer2.Player, CanSeek, "b"),
 
 	{ .iface = NULL, .property = NULL, .get = NULL, .set = NULL },
 
