@@ -7,7 +7,7 @@
 
 static const char * const INTROSPECT_REPLY =
 	"<!DOCTYPE node PUBLIC \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\""
-	"\"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\">"
+	" \"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\">"
 	"  <node>"
 	INTROSPECT_INTERFACE_FRAGMENT_INTROSPECTABLE
 	INTROSPECT_INTERFACE_FRAGMENT_PROPERTIES
