@@ -335,17 +335,43 @@ int properties_get_eval(DBusConnection *dbus, DBusMessage *msg,
 	return 0;
 }
 
+static void append_property_keyval(DBusMessageIter *iter, const struct property_handler *handler,
+				   const struct remote_callback_ops *cb_ops, const void *cb_data)
+{
+	DBusMessageIter sub;
+	DBusMessageIter variant;
+
+	dbus_message_iter_open_container(iter, DBUS_TYPE_DICT_ENTRY, (const char *)NULL, &sub);
+
+	dbus_message_iter_append_basic(&sub, DBUS_TYPE_STRING, &handler->property);
+	dbus_message_iter_open_container(&sub, DBUS_TYPE_VARIANT, handler->value_signature, &variant);
+	handler->get(&variant, cb_ops, cb_data);
+	dbus_message_iter_close_container(&sub, &variant);
+
+	dbus_message_iter_close_container(iter, &sub);
+}
+
 int properties_getall_eval(DBusConnection *dbus, DBusMessage *msg,
 			   const struct remote_callback_ops *cb_ops, const void *cb_data)
 {
 	DBusMessage *reply;
 	DBusMessageIter iter, sub;
+	char *iface;
+
+	iface = NULL;
+	dbus_message_get_args(msg, (DBusError *)NULL, DBUS_TYPE_STRING, &iface);
 
 	reply = dbus_message_new_method_return(msg);
 	dbus_message_iter_init_append(reply, &iter);
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "{sv}", &sub);
-
-	/* TODO: append props */
+	if (iface != NULL) {
+		int i;
+		for (i = 0; property_handlers[i].iface; i++) {
+			if (strcmp(property_handlers[i].iface, iface) == 0) {
+				append_property_keyval(&sub, &property_handlers[i], cb_ops, cb_data);
+			}
+		}
+	}
 
 	dbus_message_iter_close_container(&iter, &sub);
 	dbus_connection_send(dbus, reply, (dbus_uint32_t *)NULL);
