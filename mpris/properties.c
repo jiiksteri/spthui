@@ -376,8 +376,8 @@ int properties_getall_eval(DBusConnection *dbus, DBusMessage *msg,
 	DBusMessageIter iter, sub;
 
 	reply = dbus_message_new_method_return(msg);
-	dbus_message_iter_init_append(msg, &iter);
-	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "{s,v}", &sub);
+	dbus_message_iter_init_append(reply, &iter);
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "{sv}", &sub);
 
 	/* TODO: append props */
 
