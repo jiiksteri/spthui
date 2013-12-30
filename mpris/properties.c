@@ -30,9 +30,10 @@ static void property_get_empty_string_array(DBusMessageIter *reply,
 					    const struct remote_callback_ops *cb_ops,
 					    const void *cb_data)
 {
-	char *empty = "";
+	DBusMessageIter array;
 
-	dbus_message_iter_append_fixed_array(reply, DBUS_TYPE_STRING, &empty, 0);
+	dbus_message_iter_open_container(reply, DBUS_TYPE_ARRAY, "s", &array);
+	dbus_message_iter_close_container(reply, &array);
 }
 
 static void property_set_noop(DBusConnection *dbus, DBusMessage *msg,
@@ -57,10 +58,13 @@ static void property_get_SupportedUriSchemes(DBusMessageIter *reply,
 					     const struct remote_callback_ops *cb_ops,
 					     const void *cb_data)
 {
-	char *schemes[] = { "spthui" };
-	char **schemesp = schemes;
+	DBusMessageIter array;
+	char *scheme = "spthui";
 
-	dbus_message_iter_append_fixed_array(reply, DBUS_TYPE_STRING, &schemesp, 1);
+	dbus_message_iter_open_container(reply, DBUS_TYPE_ARRAY, "s", &array);
+	dbus_message_iter_append_basic(&array, DBUS_TYPE_STRING, &scheme);
+	dbus_message_iter_close_container(reply, &array);
+
 }
 
 static void property_get_CanRaise(DBusMessageIter *reply,
