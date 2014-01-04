@@ -10,9 +10,9 @@ static void property_get_string(DBusMessageIter *reply, const char *s)
 	dbus_message_iter_append_basic(reply, DBUS_TYPE_STRING, &s);
 }
 
-static void property_get_int(DBusMessageIter *reply, dbus_int32_t i)
+static void property_get_int64(DBusMessageIter *reply, dbus_int64_t i)
 {
-	dbus_message_iter_append_basic(reply, DBUS_TYPE_INT32, &i);
+	dbus_message_iter_append_basic(reply, DBUS_TYPE_INT64, &i);
 }
 
 static void property_get_double(DBusMessageIter *reply, double d)
@@ -130,7 +130,7 @@ static void property_get_Rate(DBusMessageIter *reply,
 			      const struct remote_callback_ops *cb_ops,
 			      const void *cb_data)
 {
-	property_get_int(reply, 0);
+	property_get_double(reply, 0);
 }
 
 static void property_get_MetaData(DBusMessageIter *reply,
@@ -161,7 +161,7 @@ static void property_get_Position(DBusMessageIter *reply,
 				  const struct remote_callback_ops *cb_ops,
 				  const void *cb_data)
 {
-	property_get_double(reply, 0.0);
+	property_get_int64(reply, 0.0);
 }
 
 static void property_get_MinimumRate(DBusMessageIter *reply,
