@@ -189,8 +189,6 @@ void popup_show(struct item *item, const char *name,
 	g_signal_connect(popup->menu, "deactivate",
 			 G_CALLBACK(popup_destroy), popup);
 
-	gtk_menu_set_title(popup->menu, name);
-
 	if (setup_menu_for_item(popup, item) <= 0) {
 		return;
 	}
