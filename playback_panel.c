@@ -194,13 +194,13 @@ struct playback_panel *playback_panel_init(struct playback_panel_ops *ops,
 	 * Earlier versions just use the mnemonic.
 	 */
 
-	prev = gtk_button_new_from_stock(GTK_STOCK_MEDIA_PREVIOUS);
+	prev = COMPAT_GTK_PREV_BUTTON();
 	g_signal_connect(prev, "clicked", G_CALLBACK(prev_clicked), panel);
 
-	next = gtk_button_new_from_stock(GTK_STOCK_MEDIA_NEXT);
+	next = COMPAT_GTK_NEXT_BUTTON();
 	g_signal_connect(next, "clicked", G_CALLBACK(next_clicked), panel);
 
-	panel->playback_toggle = GTK_BUTTON(gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY));
+	panel->playback_toggle = GTK_BUTTON(COMPAT_GTK_PLAY_BUTTON());
 	g_signal_connect(GTK_WIDGET(panel->playback_toggle), "clicked",
 			 G_CALLBACK(playback_toggle_clicked), panel);
 
@@ -275,7 +275,7 @@ void playback_panel_set_info(struct playback_panel *panel,
 	const char *stock;
 	char *name;
 
-	stock = playing	? GTK_STOCK_MEDIA_PAUSE	: GTK_STOCK_MEDIA_PLAY;
+	stock = playing	? COMPAT_GTK_PAUSE_LABEL : COMPAT_GTK_PLAY_LABEL;
 
 	if (track != NULL) {
 		name = track_name_full(track);
@@ -293,7 +293,7 @@ void playback_panel_set_info(struct playback_panel *panel,
 
 	gtk_progress_bar_set_text(panel->track_info, name != NULL ? name : "");
 	free(name);
-	gtk_button_set_label(panel->playback_toggle, stock);
+	compat_gtk_button_set_label(panel->playback_toggle, stock);
 
 	if (playing) {
 		if (panel->updater == 0) {

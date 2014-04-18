@@ -25,4 +25,30 @@ typedef GtkViewport GtkScrollable;
 #endif /* GTK_MAJOR_VERSION < 3 */
 
 
+#if GTK_MAJOR_VERSION >= 3 && GTK_MINOR_VERSION >= 10
+#  define COMPAT_GTK_PLAY_BUTTON() gtk_button_new_from_icon_name("media-playback-start", GTK_ICON_SIZE_BUTTON)
+#  define COMPAT_GTK_NEXT_BUTTON() gtk_button_new_from_icon_name("media-skip-forward", GTK_ICON_SIZE_BUTTON)
+#  define COMPAT_GTK_PREV_BUTTON() gtk_button_new_from_icon_name("media-skip-backward", GTK_ICON_SIZE_BUTTON)
+#  define COMPAT_GTK_CLOSE_IMAGE() gtk_image_new_from_icon_name("window-close", GTK_ICON_SIZE_SMALL_TOOLBAR)
+
+/*
+ * The labels are actually "icon names" here, used by compat_gtk_button_set_label()
+ * Yes, it would be saner to just abstract away the whole thing and provide
+ * compat_gtk_set_playback_button_action(button, bool play)
+ */
+#  define COMPAT_GTK_PAUSE_LABEL "media-playback-pause"
+#  define COMPAT_GTK_PLAY_LABEL "media-playback-start"
+#  define compat_gtk_button_set_label(button,label) gtk_button_set_image(button, gtk_image_new_from_icon_name(label, GTK_ICON_SIZE_BUTTON))
+#else
+#  define COMPAT_GTK_PLAY_BUTTON() gtk_button_new_from_stock(GTK_STOCK_MEDIA_PLAY)
+#  define COMPAT_GTK_NEXT_BUTTON() gtk_button_new_from_stock(GTK_STOCK_MEDIA_NEXT)
+#  define COMPAT_GTK_PREV_BUTTON() gtk_button_new_from_stock(GTK_STOCK_MEDIA_PREVIOUS)
+#  define COMPAT_GTK_CLOSE_IMAGE() gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_SMALL_TOOLBAR)
+
+#  define COMPAT_GTK_PAUSE_LABEL GTK_STOCK_MEDIA_PAUSE
+#  define COMPAT_GTK_PLAY_LABEL  GTK_STOCK_MEDIA_PLAY
+#  define compat_gtk_button_set_label(button,label) gtk_button_set_label(button, label)
+#endif
+
+
 #endif /* COMPAT_GTK_H__INCLUDED */

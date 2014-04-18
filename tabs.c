@@ -73,9 +73,7 @@ struct tabs *tabs_init(struct tabs_ops *ops, sp_session *sp_session, void *userd
 	tabs->tab_items = malloc(5 * sizeof(*tabs->tab_items));
 
 	btn = GTK_BUTTON(gtk_button_new());
-	gtk_button_set_image(btn,
-			     gtk_image_new_from_stock(GTK_STOCK_CLOSE,
-						      GTK_ICON_SIZE_SMALL_TOOLBAR));
+	gtk_button_set_image(btn, COMPAT_GTK_CLOSE_IMAGE());
 	gtk_notebook_set_action_widget(tabs->tabs, GTK_WIDGET(btn), GTK_PACK_END);
 
 	gtk_widget_show_all(GTK_WIDGET(btn));
