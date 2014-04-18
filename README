@@ -24,8 +24,6 @@ Requirements
   * alsa development packages
 
   * gtk2 or gtk3 development packages
-  ** there's no autoprobing, so you'll need to decide which to use when
-     building
 
 
 If that didn't put you off yet, for running you'll need:
@@ -41,18 +39,19 @@ If that didn't put you off yet, for running you'll need:
 Building
 =========
 
-To build with the GTK2 ui:
+The Makefile uses pkg-config(1) to probe for GTK libraries. It will
+first try gtk+-3.0, and if that's not found, gtk+-2.0. There's a fair
+amount of compatibility gunk to ensure spthui works equally badly
+on either.
 
-  make clean all
+To force building with the GTK2 ui:
 
-For GTK3 you'll need
+  make clean all UI=gtk2
+
+or GTK3, unsurprisingly:
 
   make clean all UI=gtk3
 
-There's nothing autofiguring-out the GTK version to use. The makefile
-defaults to GTK2 for the simple reason of yours truly not having GTK3
-development libraries installed when this whole experiment in madness
-began. It _should_ work equally badly on both though.
 
 If the build falls apart you'll need to adjust the makefile. I am sorry.
 

@@ -1,5 +1,15 @@
 
-UI ?= gtk2
+# If UI=... is not specified we probe for latest gtk.
+ifeq ($(UI),)
+	UI := $(shell pkg-config gtk+-3.0 && echo "gtk3")
+endif
+ifeq ($(UI),)
+	UI := $(shell pkg-config gtk+-2.0 && echo "gtk2")
+endif
+ifeq ($(UI),)
+	# This most likely won't work.
+	UI := gtk2
+endif
 
 PKGCONFIG_packages = libspotify alsa $(PKGCONFIG_$(UI))
 
