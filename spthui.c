@@ -544,7 +544,7 @@ static void show_ok_dialog(GtkWindow *parent, const char *title, const char *mes
 	dlg = GTK_DIALOG(gtk_dialog_new_with_buttons(title, parent,
 						     GTK_DIALOG_DESTROY_WITH_PARENT
 						     | GTK_DIALOG_MODAL,
-						     GTK_STOCK_OK, GTK_RESPONSE_OK,
+						     "_OK", GTK_RESPONSE_OK,
 						     NULL));
 
 	content = gtk_dialog_get_content_area(dlg);
