@@ -47,7 +47,8 @@ LDFLAGS := $(LDFLAGS) $(shell pkg-config --libs $(PKGCONFIG_packages)) \
 
 all: spthui
 
-spthui: audio.o \
+OBJS := \
+	audio.o \
 	titles.o \
 	item.o \
 	view.o \
@@ -59,5 +60,24 @@ spthui: audio.o \
 	image.o \
 	spthui.o
 
+spthui: $(OBJS)
+
+-include $(OBJS:.o=.d)
+
 clean:
-	$(RM) spthui *.o
+	$(RM) spthui *.o *.d
+
+#
+# Dependency generation algorithm lifted from:
+#
+#  Autodependencies with GNU make
+#  http://scottmcpeak.com/autodepend/autodepend.html
+#
+%.o: %.c
+	$(CC) -c $(CFLAGS) $*.c -o $*.o
+	@$(CC) -MM $(CFLAGS) $*.c > $*.d
+	@mv -f $*.d $*.d.tmp
+	@sed -e 's|.*:|$*.o:|' < $*.d.tmp > $*.d
+	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
+		sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
+	@$(RM) $*.d.tmp
