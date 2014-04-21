@@ -10,6 +10,6 @@
 
 char *title_artist_album_track(sp_track *track);
 char *title_artist_album(sp_album *album);
-
+char *title_index_track_duration(sp_track *track);
 
 #endif

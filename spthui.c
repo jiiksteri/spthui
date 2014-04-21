@@ -645,43 +645,8 @@ static void playlist_expand_into(GtkListStore *store, sp_playlist *pl)
 	int i;
 	for (i = 0; i < sp_playlist_num_tracks(pl); i++) {
 		sp_track *track = sp_playlist_track(pl, i);
-		add_track(store, track, strdup(sp_track_name(track)));
+		add_track(store, track, title_index_track_duration(track));
 	}
-}
-
-static int split_duration(int *minutes, int *seconds, sp_track *track)
-{
-	int millis;
-	millis = sp_track_duration(track);
-
-	if (millis > 0) {
-		*minutes = millis / 1000 / 60;
-		*seconds = millis / 1000 - *minutes * 60;
-	}
-
-	return millis;
-}
-
-static char *name_with_index_and_duration(sp_track *track)
-{
-	char *buf;
-	const char *orig;
-	int sz;
-	int minutes, seconds;
-
-	orig = sp_track_name(track);
-	sz = strlen(orig) + 4 + 16 + 1;
-	buf = malloc(sz);
-	if (split_duration(&minutes, &seconds, track)) {
-		snprintf(buf, sz, "%02d. %s (%02d:%02d)",
-			 sp_track_index(track), orig, minutes, seconds);
-	} else {
-		snprintf(buf, sz, "%02d. %s",
-			 sp_track_index(track), orig);
-	}
-
-	buf[sz-1] = '\0';
-	return buf;
 }
 
 static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userdata)
@@ -701,7 +666,7 @@ static void expand_album_browse_complete(sp_albumbrowse *sp_browse, void *userda
 	 */
 	for (i = 0; i < sp_albumbrowse_num_tracks(sp_browse); i++) {
 		sp_track *track = sp_albumbrowse_track(sp_browse, i);
-		add_track(browse->store, track, name_with_index_and_duration(track));
+		add_track(browse->store, track, title_index_track_duration(track));
 	}
 
 	image_target = malloc(sizeof(*image_target));
