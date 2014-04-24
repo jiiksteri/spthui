@@ -254,14 +254,7 @@ static sp_playlist_callbacks pl_callbacks = {
 	.playlist_state_changed = pl_fill_name,
 };
 
-/*
- * We're called from the spotify thread so need to
- * protect the UI.
- *
- * http://developer.gnome.org/gdk/unstable/gdk-Threads.html#gdk-Threads.description
- *
- * Hence gdk_threads_{enter,leave}()
- */
+/* Needs to be called with spthui_lock() held. */
 static void do_add_playlists(sp_playlistcontainer *playlists, void *userdata)
 {
 	struct spthui *spthui = userdata;
