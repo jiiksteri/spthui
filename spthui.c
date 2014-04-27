@@ -302,8 +302,10 @@ static void logged_in(sp_session *session, sp_error error)
 	if (error == SP_ERROR_OK) {
 		add_playlists(spthui, session);
 		spthui->login_error = NULL;
+		tabs_mark_logged_in(spthui->tabs, session);
 	} else {
 		spthui->login_error = sp_error_message(error);
+		tabs_mark_logged_out(spthui->tabs);
 	}
 
 	gdk_threads_add_idle((GSourceFunc)ui_handle_login_result, spthui);

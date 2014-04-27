@@ -35,4 +35,8 @@ GtkContainer *tab_image_container(struct tab *tab);
 
 struct tab *tabs_remove(struct tabs *tabs, int ind);
 
+
+void tabs_mark_logged_in(struct tabs *tabs, sp_session *session);
+void tabs_mark_logged_out(struct tabs *tabs);
+
 #endif

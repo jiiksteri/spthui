@@ -27,6 +27,9 @@ struct tabs {
 
 	sp_session *sp_session;
 
+	GtkButton *inbox_button;
+	char *inbox_label;
+
 };
 
 GtkWidget *tabs_widget(struct tabs *tabs)
@@ -57,16 +60,27 @@ static void close_selected_tab_trampoline(GtkButton *btn, void *userdata)
 static GtkWidget *create_action_widget(struct tabs *tabs)
 {
 	GtkButton *btn;
+	GtkWidget *action_widget;
+
+	action_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+
+	tabs->inbox_button = GTK_BUTTON(gtk_button_new());
+
+	gtk_box_pack_start(GTK_BOX(action_widget),
+			   GTK_WIDGET(tabs->inbox_button),
+			   FALSE, FALSE, 0);
 
 	btn = GTK_BUTTON(gtk_button_new());
 	gtk_button_set_image(btn, COMPAT_GTK_CLOSE_IMAGE());
 	g_signal_connect(btn, "clicked",
 			 G_CALLBACK(close_selected_tab_trampoline), tabs);
+	gtk_box_pack_start(GTK_BOX(action_widget),
+			   GTK_WIDGET(btn),
+			   FALSE, FALSE, 0);
 
+	gtk_notebook_set_action_widget(tabs->tabs, action_widget, GTK_PACK_END);
 
-	gtk_notebook_set_action_widget(tabs->tabs, GTK_WIDGET(btn), GTK_PACK_END);
-
-	return GTK_WIDGET(btn);
+	return action_widget;
 }
 
 struct tabs *tabs_init(struct tabs_ops *ops, sp_session *sp_session, void *userdata)
@@ -162,6 +176,7 @@ void tabs_destroy(struct tabs *tabs)
 		}
 		free(tabs->tab_items);
 	}
+	free(tabs->inbox_label);
 	free(tabs);
 }
 
@@ -234,4 +249,77 @@ struct tab *tabs_remove(struct tabs *tabs, int ind)
 GtkContainer *tab_image_container(struct tab *tab)
 {
 	return GTK_CONTAINER(tab->image_container);
+}
+
+static gboolean show_inbox_title(gpointer _tabs)
+{
+	struct tabs *tabs = _tabs;
+
+	gtk_button_set_label(tabs->inbox_button, tabs->inbox_label);
+	gtk_widget_show_all(GTK_WIDGET(tabs->inbox_button));
+
+	return FALSE;
+}
+
+static void build_inbox_title(struct tabs *tabs, sp_session *session)
+{
+	sp_playlistcontainer *pc;
+	sp_playlist *inbox;
+	size_t size;
+	char *buf, *old;
+	const char *username;
+
+	int unseen, total;
+
+	username = sp_session_user_name(session);
+
+	pc = sp_session_playlistcontainer(session);
+	inbox = sp_session_inbox_create(session);
+
+	total = sp_playlist_num_tracks(inbox);
+	/*
+	 * FIXME: sp_playlistcontainer_get_unseen_tracks()
+	 * is buggered and keeps returning -1
+	 */
+	unseen = sp_playlistcontainer_get_unseen_tracks(pc, inbox, (sp_track **)NULL, 0);
+	fprintf(stderr, "%s(): loaded %d, total %d, unseen %d\n", __func__,
+		sp_playlist_is_loaded(inbox),
+		total,
+		unseen);
+
+	sp_playlist_release(inbox);
+
+	/*
+	 * 8 is just a handy-wavy number to provide space
+	 * for "<username> (<unseen>/<total>)
+	 */
+	size = strlen(username) + 16;
+	buf = malloc(size);
+	snprintf(buf, size, "%s %d/%d", username, unseen, total);
+	buf[size-1] = '\0';
+	/* Yeah well, this is still probably racy
+	 * as the UI thread may be in the process of
+	 * setting the title while we swap it.
+	 */
+	old = tabs->inbox_label;
+	tabs->inbox_label = buf;
+	free(old);
+}
+
+void tabs_mark_logged_in(struct tabs *tabs, sp_session *session)
+{
+	/*
+	 * We're called with spthui_lock() held, but not the GDK one
+	 * so we cannot do UI manipulation here.
+	 *
+	 * We _can_ setup the button title and have the GDK thread
+	 * shove it into place, though.
+	 */
+	build_inbox_title(tabs, session);
+	gdk_threads_add_idle(show_inbox_title, tabs);
+}
+
+void tabs_mark_logged_out(struct tabs *tabs)
+{
+	fprintf(stderr, "%s(): not implemented\n", __func__);
 }
