@@ -635,12 +635,14 @@ static void add_track(GtkListStore *store, sp_track *track, char *name)
 			   -1);
 }
 
-static void playlist_expand_into(GtkListStore *store, sp_playlist *pl)
+static void playlist_expand_into(GtkListStore *store, sp_playlist *pl,
+				 char *(*track_title_func)(sp_playlist *pl, int ind, sp_track *track))
+
 {
 	int i;
 	for (i = 0; i < sp_playlist_num_tracks(pl); i++) {
 		sp_track *track = sp_playlist_track(pl, i);
-		add_track(store, track, title_index_track_duration(track));
+		add_track(store, track, track_title_func(pl, i, track));
 	}
 }
 
@@ -868,7 +870,8 @@ static void expand_artist(struct spthui *spthui, sp_artist *artist)
 
 
 /* Called with both GDK and spthui_lock() held. */
-static void expand_playlist(struct spthui *spthui, sp_playlist *pl, const char *name)
+static void expand_playlist(struct spthui *spthui, sp_playlist *pl, const char *name,
+			    char *(*track_title_func)(sp_playlist *pl, int ind, sp_track *track))
 {
 	GtkTreeView *view;
 	struct item *item;
@@ -876,7 +879,13 @@ static void expand_playlist(struct spthui *spthui, sp_playlist *pl, const char *
 	view = spthui_list_new(spthui);
 	item = item_init_playlist(pl, strdup(name));
 	tab_add(spthui->tabs, view, item_name(item), item);
-	playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)), pl);
+	playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)), pl,
+			     track_title_func);
+}
+
+static char *title_index_track_duration_fn(sp_playlist *pl, int ind, sp_track *track)
+{
+	return title_index_track_duration(track);
 }
 
 static void expand_item(struct item *item, void *user_data)
@@ -890,7 +899,7 @@ static void expand_item(struct item *item, void *user_data)
 	switch (item_type(item)) {
 	case ITEM_PLAYLIST:
 		pl = item_playlist(item);
-		expand_playlist(spthui, pl, sp_playlist_name(pl));
+		expand_playlist(spthui, pl, sp_playlist_name(pl), title_index_track_duration_fn);
 		break;
 	case ITEM_ALBUM:
 		expand_album(spthui, item_album(item));
@@ -1047,6 +1056,43 @@ static void switch_page(struct tabs *tabs, unsigned int page_num, void *userdata
 	spthui->selected_view = tab_view(tabs, page_num);
 }
 
+static char *inbox_track_title(sp_playlist *pl, int ind, sp_track *track)
+{
+	const char *creator;
+	char *seen;
+	time_t created;
+	char ts[32];
+	char *title;
+	char *buf;
+	size_t size;
+
+	seen = sp_playlist_track_seen(pl, ind) ? "" : "NEW ";
+
+	created = (time_t)sp_playlist_track_create_time(pl, ind);
+	ctime_r(&created, ts);
+
+	creator = sp_user_display_name(sp_playlist_track_creator(pl, ind));
+
+	title = title_artist_album_track(track);
+	/*
+	 * We're not entirely accurate here, but it's the length of
+	 * known fields and a a bit of extra that's enough for our
+	 * content.
+	 *
+	 * The ctime(3) buffer is a "user-supplied buffer which should
+	 * have room for at least 26 bytes", if you must know.
+	 */
+	size = strlen(seen) + strlen(creator) + strlen(title) + 64;
+	buf = malloc(size);
+	snprintf(buf, size, "%s%s From %s: %s", seen, ts, creator, title);
+	buf[size-1] = '\0';
+
+	/* title was allocated by title_artist_album_track() */
+	free(title);
+
+	return buf;
+}
+
 static void expand_inbox(struct tabs *tabs, void *userdata)
 {
 	struct spthui *spthui = userdata;
@@ -1056,7 +1102,7 @@ static void expand_inbox(struct tabs *tabs, void *userdata)
 
 	inbox = sp_session_inbox_create(spthui->sp_session);
 
-	expand_playlist(spthui, inbox, "INBOX");
+	expand_playlist(spthui, inbox, "INBOX", inbox_track_title);
 
 	sp_playlist_release(inbox);
 
