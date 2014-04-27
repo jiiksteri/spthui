@@ -868,13 +868,13 @@ static void expand_artist(struct spthui *spthui, sp_artist *artist)
 
 
 /* Called with both GDK and spthui_lock() held. */
-static void expand_playlist(struct spthui *spthui, sp_playlist *pl)
+static void expand_playlist(struct spthui *spthui, sp_playlist *pl, const char *name)
 {
 	GtkTreeView *view;
 	struct item *item;
 
 	view = spthui_list_new(spthui);
-	item = item_init_playlist(pl, strdup(sp_playlist_name(pl)));
+	item = item_init_playlist(pl, strdup(name));
 	tab_add(spthui->tabs, view, item_name(item), item);
 	playlist_expand_into(GTK_LIST_STORE(gtk_tree_view_get_model(view)), pl);
 }
@@ -882,13 +882,15 @@ static void expand_playlist(struct spthui *spthui, sp_playlist *pl)
 static void expand_item(struct item *item, void *user_data)
 {
 	struct spthui *spthui = user_data;
+	sp_playlist *pl;
 
 	spthui_lock(spthui);
 
 	fprintf(stderr, "%s(): item=%p\n", __func__, item);
 	switch (item_type(item)) {
 	case ITEM_PLAYLIST:
-		expand_playlist(spthui, item_playlist(item));
+		pl = item_playlist(item);
+		expand_playlist(spthui, pl, sp_playlist_name(pl));
 		break;
 	case ITEM_ALBUM:
 		expand_album(spthui, item_album(item));
@@ -1045,8 +1047,25 @@ static void switch_page(struct tabs *tabs, unsigned int page_num, void *userdata
 	spthui->selected_view = tab_view(tabs, page_num);
 }
 
+static void expand_inbox(struct tabs *tabs, void *userdata)
+{
+	struct spthui *spthui = userdata;
+	sp_playlist *inbox;
+
+	spthui_lock(spthui);
+
+	inbox = sp_session_inbox_create(spthui->sp_session);
+
+	expand_playlist(spthui, inbox, "INBOX");
+
+	sp_playlist_release(inbox);
+
+	spthui_unlock(spthui);
+}
+
 static struct tabs_ops tabs_ops = {
 	.switch_cb = switch_page,
+	.expand_inbox_cb = expand_inbox,
 	.close_cb = close_selected_tab,
 };
 

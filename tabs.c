@@ -57,6 +57,13 @@ static void close_selected_tab_trampoline(GtkButton *btn, void *userdata)
 	}
 }
 
+static void expand_inbox_trampoline(GtkButton *btn, struct tabs *tabs) {
+
+	if (tabs->ops->expand_inbox_cb) {
+		tabs->ops->expand_inbox_cb(tabs, tabs->userdata);
+	}
+}
+
 static GtkWidget *create_action_widget(struct tabs *tabs)
 {
 	GtkButton *btn;
@@ -65,6 +72,8 @@ static GtkWidget *create_action_widget(struct tabs *tabs)
 	action_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 
 	tabs->inbox_button = GTK_BUTTON(gtk_button_new());
+	g_signal_connect(tabs->inbox_button, "clicked",
+			 G_CALLBACK(expand_inbox_trampoline), tabs);
 
 	gtk_box_pack_start(GTK_BOX(action_widget),
 			   GTK_WIDGET(tabs->inbox_button),

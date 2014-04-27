@@ -12,6 +12,7 @@ struct tabs;
 
 struct tabs_ops {
 	void (*switch_cb)(struct tabs *tabs, unsigned int page_num, void *userdata);
+	void (*expand_inbox_cb)(struct tabs *tabs, void *userdata);
 	void (*close_cb)(struct tabs *tabs, int page_num, void *userdata);
 };
 
