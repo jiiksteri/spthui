@@ -54,11 +54,24 @@ static void close_selected_tab_trampoline(GtkButton *btn, void *userdata)
 	}
 }
 
+static GtkWidget *create_action_widget(struct tabs *tabs)
+{
+	GtkButton *btn;
+
+	btn = GTK_BUTTON(gtk_button_new());
+	gtk_button_set_image(btn, COMPAT_GTK_CLOSE_IMAGE());
+	g_signal_connect(btn, "clicked",
+			 G_CALLBACK(close_selected_tab_trampoline), tabs);
+
+
+	gtk_notebook_set_action_widget(tabs->tabs, GTK_WIDGET(btn), GTK_PACK_END);
+
+	return GTK_WIDGET(btn);
+}
 
 struct tabs *tabs_init(struct tabs_ops *ops, sp_session *sp_session, void *userdata)
 {
 	struct tabs *tabs;
-	GtkButton *btn;
 
 	tabs = malloc(sizeof(*tabs));
 	memset(tabs, 0, sizeof(*tabs));
@@ -72,18 +85,10 @@ struct tabs *tabs_init(struct tabs_ops *ops, sp_session *sp_session, void *userd
 
 	tabs->tab_items = malloc(5 * sizeof(*tabs->tab_items));
 
-	btn = GTK_BUTTON(gtk_button_new());
-	gtk_button_set_image(btn, COMPAT_GTK_CLOSE_IMAGE());
-	gtk_notebook_set_action_widget(tabs->tabs, GTK_WIDGET(btn), GTK_PACK_END);
-
-	gtk_widget_show_all(GTK_WIDGET(btn));
-
+	gtk_widget_show_all(create_action_widget(tabs));
 
 	g_signal_connect(tabs->tabs, "switch-page",
 			 G_CALLBACK(switch_page_trampoline), tabs);
-
-	g_signal_connect(btn, "clicked",
-			 G_CALLBACK(close_selected_tab_trampoline), tabs);
 
 	return tabs;
 
