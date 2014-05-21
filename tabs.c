@@ -270,6 +270,17 @@ static gboolean show_inbox_title(gpointer _tabs)
 	return FALSE;
 }
 
+static int count_unseen_harder(sp_playlist *pl, int total) {
+
+	int unseen;
+	int i;
+
+	for (unseen = 0, i = 0; i < total; i++) {
+		unseen += !sp_playlist_track_seen(pl, i);
+	}
+	return unseen;
+}
+
 static void build_inbox_title(struct tabs *tabs, sp_session *session)
 {
 	sp_playlistcontainer *pc;
@@ -291,6 +302,14 @@ static void build_inbox_title(struct tabs *tabs, sp_session *session)
 	 * is buggered and keeps returning -1
 	 */
 	unseen = sp_playlistcontainer_get_unseen_tracks(pc, inbox, (sp_track **)NULL, 0);
+	if (unseen < 0) {
+		fprintf(stderr, "%s(): unseen tracks still broken :(\n", __func__);
+		unseen = count_unseen_harder(inbox, total);
+	} else {
+		fprintf(stderr,	"%s(): unseen tracks worked, REMOVE WORKAROUND!\n",
+			__func__);
+	}
+
 	fprintf(stderr, "%s(): loaded %d, total %d, unseen %d\n", __func__,
 		sp_playlist_is_loaded(inbox),
 		total,
