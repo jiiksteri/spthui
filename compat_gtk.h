@@ -51,4 +51,22 @@ typedef GtkViewport GtkScrollable;
 #endif
 
 
+/*
+ * GtkAlignment is deprecated since gtk 3.14. See compat_gtk{2,3}.c for implementation
+ * alternatives
+ */
+
+typedef enum {
+	COMPAT_GTK_ALIGN_START,
+	COMPAT_GTK_ALIGN_CENTER,
+	COMPAT_GTK_ALIGN_END,
+} compat_gtk_align_t;
+
+GtkWidget *compat_gtk_fill(GtkWidget *widget,
+			   gint margin_top, gint margin_bottom, gint margin_start, gint margin_end);
+
+GtkWidget *compat_gtk_align(GtkWidget *widget,
+			    compat_gtk_align_t xalign, compat_gtk_align_t yalign,
+			    gint margin_top, gint margin_bottom, gint margin_start, gint margin_end);
+
 #endif /* COMPAT_GTK_H__INCLUDED */

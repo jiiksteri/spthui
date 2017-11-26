@@ -791,15 +791,8 @@ static inline GtkScrollable *make_scrollable(GtkWidget *child)
 
 static GtkWidget *pad(GtkWidget *child, int howmuch)
 {
-	GtkAlignment *align;
-
-	align = GTK_ALIGNMENT(gtk_alignment_new(0.5, 0.5, 1, 1));
-	gtk_container_add(GTK_CONTAINER(align), child);
-
-	gtk_alignment_set_padding(align,
-				  howmuch, howmuch, howmuch, howmuch);
-
-	return GTK_WIDGET(align);
+	return compat_gtk_fill(child,
+			       howmuch, howmuch, howmuch, howmuch);
 }
 
 /* Called with both GDK and spthui_lock() held. */

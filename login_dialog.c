@@ -61,26 +61,20 @@ static void login_clicked(GtkButton *btn, void *data)
 
 static GtkWidget *ui_align_right(GtkWidget *widget)
 {
-	GtkWidget *align;
-
-	align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
-	gtk_container_add(GTK_CONTAINER(align), widget);
-	return align;
+	return compat_gtk_align(widget,
+				COMPAT_GTK_ALIGN_END, COMPAT_GTK_ALIGN_CENTER,
+				0, 0, 0, 0);
 }
 
 static GtkWidget *create_branding_panel()
 {
 	GtkLabel *text;
-	GtkAlignment *alignment;
 
 	text = GTK_LABEL(gtk_label_new(BRANDING_TEXT));
 	gtk_label_set_line_wrap(text, TRUE);
 
-	alignment = GTK_ALIGNMENT(gtk_alignment_new(1.0, 1.0, 1.0, 1.0));
-	gtk_alignment_set_padding(alignment, 30, 5, 10, 10);
-	gtk_container_add(GTK_CONTAINER(alignment), GTK_WIDGET(text));
-
-	return GTK_WIDGET(alignment);
+	return compat_gtk_fill(GTK_WIDGET(text),
+			       30, 5, 10, 10);
 }
 
 struct login_dialog *login_dialog_init(login_dialog_login_cb login_cb,
@@ -88,7 +82,6 @@ struct login_dialog *login_dialog_init(login_dialog_login_cb login_cb,
 {
 	GtkBox *hbox, *vbox;
 	GtkWidget *login_btn;
-	GtkWidget *alignment;
 	struct login_dialog *dlg;
 
 	dlg = malloc(sizeof(*dlg));
@@ -153,10 +146,12 @@ struct login_dialog *login_dialog_init(login_dialog_login_cb login_cb,
 	login_btn = gtk_button_new_with_label("Log in");
 	g_signal_connect(login_btn, "clicked", G_CALLBACK(login_clicked), dlg);
 
-	alignment = gtk_alignment_new(1.0, 1.0, 0.0, 0.0);
-	gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), 0, 5, 0, 0);
-	gtk_container_add(GTK_CONTAINER(alignment), login_btn);
-	gtk_box_pack_start(hbox, alignment, FALSE, FALSE, 10);
+	gtk_box_pack_start(hbox,
+			   compat_gtk_align(login_btn,
+					    COMPAT_GTK_ALIGN_END,
+					    COMPAT_GTK_ALIGN_END,
+					    0, 5, 0, 0),
+			   FALSE, FALSE, 10);
 
 	vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
 	gtk_box_pack_start(vbox, GTK_WIDGET(hbox), TRUE, TRUE, 5);

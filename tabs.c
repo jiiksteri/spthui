@@ -102,12 +102,8 @@ static void report_image_loaded(sp_image *image, void *user_data)
 
 static inline GtkWidget *pad_right(GtkWidget *widget, int amount)
 {
-	GtkWidget *align;
-
-	align = gtk_alignment_new(0.5, 0.5, 0.5, 0.5);
-	gtk_alignment_set_padding(GTK_ALIGNMENT(align), 0, 0, 0, amount);
-	gtk_container_add(GTK_CONTAINER(align), widget);
-	return align;
+	return compat_gtk_align(widget, COMPAT_GTK_ALIGN_CENTER, COMPAT_GTK_ALIGN_CENTER,
+				0, 0, 0, amount);
 }
 
 static struct tab *tab_init(sp_session *sp_session, struct item *item,
