@@ -76,7 +76,7 @@ static GtkWidget *create_branding_panel()
 	text = GTK_LABEL(gtk_label_new(BRANDING_TEXT));
 	gtk_label_set_line_wrap(text, TRUE);
 
-	alignment = GTK_ALIGNMENT(gtk_alignment_new(1.0, 1.0, 0.8, 0.8));
+	alignment = GTK_ALIGNMENT(gtk_alignment_new(1.0, 1.0, 1.0, 1.0));
 	gtk_alignment_set_padding(alignment, 30, 5, 10, 10);
 	gtk_container_add(GTK_CONTAINER(alignment), GTK_WIDGET(text));
 
