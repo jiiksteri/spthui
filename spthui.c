@@ -1233,10 +1233,7 @@ int main(int argc, char **argv)
 
 	gtk_init(&argc, &argv);
 
-	/* Force stock images for buttons where available */
-	gtk_settings_set_long_property(gtk_settings_get_default(),
-				       "gtk-button-images", TRUE,
-				       NULL);
+	compat_gtk_try_force_button_images();
 
 	memset(&spthui, 0, sizeof(spthui));
 	pthread_mutex_init(&spthui.lock, NULL);

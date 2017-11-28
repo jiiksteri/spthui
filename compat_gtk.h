@@ -69,4 +69,26 @@ GtkWidget *compat_gtk_align(GtkWidget *widget,
 			    compat_gtk_align_t xalign, compat_gtk_align_t yalign,
 			    gint margin_top, gint margin_bottom, gint margin_start, gint margin_end);
 
+
+/*
+ * Since gtk 3.6 global button image forcing via GtkSettings is
+ * deprecated, and images should be forced on using the
+ * always-show-image property on the button widget itself.
+ */
+#if GTK_MAJOR_VERSION < 3 || (GTK_MAJOR_VERSION == 3 && GTK_MINOR_VERSION < 6)
+
+#  define compat_gtk_try_force_button_images() \
+	gtk_settings_set_long_property(gtk_settings_get_default(), \
+				       "gtk-button-images", TRUE, \
+				       NULL);
+
+#else
+
+#  define compat_gtk_try_force_button_images() do {} while (0)
+
+#endif /* GTK_MAJOR_VERSION < 3 || (GTK_MAJOR_VERSION == 3 && GTK_MINOR_VERSION < 6) */
+
+
+
+
 #endif /* COMPAT_GTK_H__INCLUDED */
