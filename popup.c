@@ -8,6 +8,8 @@
 
 #include "titles.h"
 
+#include "compat_gtk.h"
+
 struct popup_item {
 	struct popup_item *next;
 	struct item *item;
@@ -195,11 +197,5 @@ void popup_show(struct item *item, const char *name,
 
 	gtk_widget_show_all(GTK_WIDGET(popup->menu));
 
-	gtk_menu_popup(popup->menu,
-		       (GtkWidget *)NULL,
-		       (GtkWidget *)NULL,
-		       (GtkMenuPositionFunc)NULL,
-		       NULL,
-		       event->button,
-		       event->time);
+	compat_gtk_menu_popup(popup->menu, event);
 }

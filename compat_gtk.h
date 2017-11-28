@@ -90,5 +90,20 @@ GtkWidget *compat_gtk_align(GtkWidget *widget,
 
 
 
+/* gtk_menu_popup() (old) vs gtk_menu_popup_at_pointer() (new hotness) */
+
+#if GTK_MAJOR_VERSION < 3 || (GTK_MAJOR_VERSION == 3 && GTK_MINOR_VERSION < 22)
+
+#  define compat_gtk_menu_popup(menu,event) \
+	gtk_menu_popup(menu, NULL, NULL, NULL, NULL, (event)->button, (event)->time)
+
+#else
+
+#  define compat_gtk_menu_popup(menu,event) gtk_menu_popup_at_pointer(menu, (GdkEvent *)event)
+
+#endif /* GTK_MAJOR_VERSION < 3 || (GTK_MAJOR_VERSION == 3 && GTK_MINOR_VERSION < 22) */
+
+
+
 
 #endif /* COMPAT_GTK_H__INCLUDED */
