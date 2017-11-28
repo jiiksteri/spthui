@@ -908,8 +908,7 @@ static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, voi
 			gtk_tree_model_get(model, &iter,
 					   COLUMN_OBJECT, &item,
 					   -1);
-			popup_show(item, item_name(item), event->button, event->time,
-				   expand_item, user_data);
+			popup_show(item, item_name(item), event, expand_item, user_data);
 		} else {
 			fprintf(stderr, "%s(): nothing selected\n", __func__);
 		}

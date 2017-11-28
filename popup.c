@@ -170,7 +170,7 @@ void popup_destroy(GtkMenuShell *menu, struct popup *popup)
 
 
 void popup_show(struct item *item, const char *name,
-		unsigned int button, uint32_t ts,
+		GdkEventButton *event,
 		popup_selection_cb popup_selection_cb,
 		void *user_data)
 {
@@ -200,6 +200,6 @@ void popup_show(struct item *item, const char *name,
 		       (GtkWidget *)NULL,
 		       (GtkMenuPositionFunc)NULL,
 		       NULL,
-		       button,
-		       ts);
+		       event->button,
+		       event->time);
 }
