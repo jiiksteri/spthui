@@ -791,18 +791,8 @@ static inline GtkScrollable *make_scrollable(GtkWidget *child)
 
 static GtkWidget *pad(GtkWidget *child, int howmuch)
 {
-	GtkAlignment *align;
-	guint top, bottom, left, right;
-
-	align = GTK_ALIGNMENT(gtk_alignment_new(0.5, 0.5, 1, 1));
-	gtk_container_add(GTK_CONTAINER(align), child);
-	gtk_alignment_get_padding(align, &top, &bottom, &left, &right);
-
-	gtk_alignment_set_padding(align,
-				  top + howmuch, bottom + howmuch,
-				  left + howmuch, right + howmuch);
-
-	return GTK_WIDGET(align);
+	return compat_gtk_fill(child,
+			       howmuch, howmuch, howmuch, howmuch);
 }
 
 /* Called with both GDK and spthui_lock() held. */
@@ -918,8 +908,7 @@ static gboolean spthui_popup_maybe(GtkWidget *widget, GdkEventButton *event, voi
 			gtk_tree_model_get(model, &iter,
 					   COLUMN_OBJECT, &item,
 					   -1);
-			popup_show(item, item_name(item), event->button, event->time,
-				   expand_item, user_data);
+			popup_show(item, item_name(item), event, expand_item, user_data);
 		} else {
 			fprintf(stderr, "%s(): nothing selected\n", __func__);
 		}
@@ -1243,10 +1232,7 @@ int main(int argc, char **argv)
 
 	gtk_init(&argc, &argv);
 
-	/* Force stock images for buttons where available */
-	gtk_settings_set_long_property(gtk_settings_get_default(),
-				       "gtk-button-images", TRUE,
-				       NULL);
+	compat_gtk_try_force_button_images();
 
 	memset(&spthui, 0, sizeof(spthui));
 	pthread_mutex_init(&spthui.lock, NULL);

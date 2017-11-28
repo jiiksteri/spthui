@@ -51,4 +51,59 @@ typedef GtkViewport GtkScrollable;
 #endif
 
 
+/*
+ * GtkAlignment is deprecated since gtk 3.14. See compat_gtk{2,3}.c for implementation
+ * alternatives
+ */
+
+typedef enum {
+	COMPAT_GTK_ALIGN_START,
+	COMPAT_GTK_ALIGN_CENTER,
+	COMPAT_GTK_ALIGN_END,
+} compat_gtk_align_t;
+
+GtkWidget *compat_gtk_fill(GtkWidget *widget,
+			   gint margin_top, gint margin_bottom, gint margin_start, gint margin_end);
+
+GtkWidget *compat_gtk_align(GtkWidget *widget,
+			    compat_gtk_align_t xalign, compat_gtk_align_t yalign,
+			    gint margin_top, gint margin_bottom, gint margin_start, gint margin_end);
+
+
+/*
+ * Since gtk 3.6 global button image forcing via GtkSettings is
+ * deprecated, and images should be forced on using the
+ * always-show-image property on the button widget itself.
+ */
+#if GTK_MAJOR_VERSION < 3 || (GTK_MAJOR_VERSION == 3 && GTK_MINOR_VERSION < 6)
+
+#  define compat_gtk_try_force_button_images() \
+	gtk_settings_set_long_property(gtk_settings_get_default(), \
+				       "gtk-button-images", TRUE, \
+				       NULL);
+
+#else
+
+#  define compat_gtk_try_force_button_images() do {} while (0)
+
+#endif /* GTK_MAJOR_VERSION < 3 || (GTK_MAJOR_VERSION == 3 && GTK_MINOR_VERSION < 6) */
+
+
+
+/* gtk_menu_popup() (old) vs gtk_menu_popup_at_pointer() (new hotness) */
+
+#if GTK_MAJOR_VERSION < 3 || (GTK_MAJOR_VERSION == 3 && GTK_MINOR_VERSION < 22)
+
+#  define compat_gtk_menu_popup(menu,event) \
+	gtk_menu_popup(menu, NULL, NULL, NULL, NULL, (event)->button, (event)->time)
+
+#else
+
+#  define compat_gtk_menu_popup(menu,event) gtk_menu_popup_at_pointer(menu, (GdkEvent *)event)
+
+#endif /* GTK_MAJOR_VERSION < 3 || (GTK_MAJOR_VERSION == 3 && GTK_MINOR_VERSION < 22) */
+
+
+
+
 #endif /* COMPAT_GTK_H__INCLUDED */

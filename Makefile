@@ -58,6 +58,7 @@ OBJS := \
 	tabs.o \
 	search.o \
 	image.o \
+	compat_$(UI).o \
 	spthui.o
 
 spthui: $(OBJS)

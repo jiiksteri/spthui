@@ -8,6 +8,8 @@
 
 #include "titles.h"
 
+#include "compat_gtk.h"
+
 struct popup_item {
 	struct popup_item *next;
 	struct item *item;
@@ -170,7 +172,7 @@ void popup_destroy(GtkMenuShell *menu, struct popup *popup)
 
 
 void popup_show(struct item *item, const char *name,
-		unsigned int button, uint32_t ts,
+		GdkEventButton *event,
 		popup_selection_cb popup_selection_cb,
 		void *user_data)
 {
@@ -195,11 +197,5 @@ void popup_show(struct item *item, const char *name,
 
 	gtk_widget_show_all(GTK_WIDGET(popup->menu));
 
-	gtk_menu_popup(popup->menu,
-		       (GtkWidget *)NULL,
-		       (GtkWidget *)NULL,
-		       (GtkMenuPositionFunc)NULL,
-		       NULL,
-		       button,
-		       ts);
+	compat_gtk_menu_popup(popup->menu, event);
 }
